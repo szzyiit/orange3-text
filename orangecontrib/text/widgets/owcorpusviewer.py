@@ -20,17 +20,17 @@ from orangecontrib.text.corpus import Corpus
 
 
 class OWCorpusViewer(OWWidget):
-    name = "Corpus Viewer"
-    description = "Display corpus contents."
+    name = "语料查看器(Corpus Viewer)"
+    description = "显示语料库内容."
     icon = "icons/CorpusViewer.svg"
     priority = 500
 
     class Inputs:
-        corpus = Input("Corpus", Corpus, replaces=["Data"])
+        corpus = Input("语料库(Corpus)", Corpus, replaces=["Data", 'Corpus'])
 
     class Outputs:
-        matching_docs = Output("Matching Docs", Corpus, default=True)
-        other_docs = Output("Other Docs", Corpus)
+        matching_docs = Output("匹配的文档(Matching Docs)", Corpus, default=True, replaces=['Matching Docs'])
+        other_docs = Output("其他文档(Other Docs)", Corpus, replaces=['Corpus'])
 
     settingsHandler = PerfectDomainContextHandler(
         match_values = PerfectDomainContextHandler.MATCH_VALUES_ALL
@@ -46,8 +46,8 @@ class OWCorpusViewer(OWWidget):
     autocommit = Setting(True)
 
     class Warning(OWWidget.Warning):
-        no_feats_search = Msg('No features included in search.')
-        no_feats_display = Msg('No features selected for display.')
+        no_feats_search = Msg('搜索中没有特征')
+        no_feats_display = Msg('没有选中要显示的特征.')
 
     def __init__(self):
         super().__init__()
@@ -60,39 +60,39 @@ class OWCorpusViewer(OWWidget):
 
         # Info attributes
         self.update_info()
-        info_box = gui.widgetBox(self.controlArea, 'Info')
-        gui.label(info_box, self, 'Documents: %(n_documents)s')
-        gui.label(info_box, self, 'Preprocessed: %(is_preprocessed)s')
-        gui.label(info_box, self, '  ◦ Tokens: %(n_tokens)s')
-        gui.label(info_box, self, '  ◦ Types: %(n_types)s')
-        gui.label(info_box, self, 'POS tagged: %(is_pos_tagged)s')
-        gui.label(info_box, self, 'N-grams range: %(ngram_range)s')
-        gui.label(info_box, self, 'Matching: %(n_matching)s')
+        info_box = gui.widgetBox(self.controlArea, '信息')
+        gui.label(info_box, self, '文档: %(n_documents)s')
+        gui.label(info_box, self, '预处: %(is_preprocessed)s')
+        gui.label(info_box, self, '  ◦ 词(Token): %(n_tokens)s')
+        gui.label(info_box, self, '  ◦ : %(n_types)s')
+        gui.label(info_box, self, 'POS 标签: %(is_pos_tagged)s')
+        gui.label(info_box, self, 'N-grams 范围: %(ngram_range)s')
+        gui.label(info_box, self, '匹配: %(n_matching)s')
 
         # Search features
         self.search_listbox = gui.listBox(
             self.controlArea, self, 'search_indices', 'search_features',
             selectionMode=QListView.ExtendedSelection,
-            box='Search features', callback=self.search_features_changed)
+            box='搜索特征', callback=self.search_features_changed)
 
         # Display features
-        display_box = gui.widgetBox(self.controlArea, 'Display features')
+        display_box = gui.widgetBox(self.controlArea, '显示特征')
         self.display_listbox = gui.listBox(
             display_box, self, 'display_list_indices', 'display_features',
             selectionMode=QListView.ExtendedSelection,
             callback=self.show_docs, enableDragDrop=True)
         self.show_tokens_checkbox = gui.checkBox(display_box, self, 'show_tokens',
-                                                 'Show Tokens && Tags', callback=self.show_docs)
+                                                 '显示词和标签', callback=self.show_docs)
 
         # Auto-commit box
-        gui.auto_commit(self.controlArea, self, 'autocommit', 'Send data', 'Auto send is on')
+        gui.auto_commit(self.controlArea, self, 'autocommit', '发送数据', '自动发送已开')
 
         # Search
         self.filter_input = gui.lineEdit(self.mainArea, self, 'regexp_filter',
                                          orientation=Qt.Horizontal,
                                          sizePolicy=QSizePolicy(QSizePolicy.MinimumExpanding,
                                                                 QSizePolicy.Fixed),
-                                         label='RegExp Filter:')
+                                         label='正则表达式筛选:')
         self.filter_input.textChanged.connect(self.refresh_search)
 
         # Main area

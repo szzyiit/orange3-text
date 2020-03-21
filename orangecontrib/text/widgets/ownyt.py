@@ -20,7 +20,7 @@ except ImportError:
 
 class OWNYT(OWWidget):
     class APICredentialsDialog(OWWidget):
-        name = "New York Times API key"
+        name = "纽约时报 API key"
         want_main_area = False
         resizing_enabled = False
         cm_key = CredentialManager('NY Times API Key')
@@ -67,7 +67,7 @@ class OWNYT(OWWidget):
             elif not silent:
                 self.Error.invalid_credentials()
 
-    name = "NY Times"
+    name = "纽约时报(NY Times)"
     description = "Fetch articles from the New York Times search API."
     icon = "icons/NYTimes.svg"
     priority = 130

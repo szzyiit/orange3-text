@@ -81,13 +81,13 @@ class State(enum.IntEnum):
 
 
 class OWImportDocuments(widget.OWWidget):
-    name = "Import Documents"
-    description = "Import text documents from folders."
+    name = "文件夹载入(Import Documents)"
+    description = "从文件夹载入文档."
     icon = "icons/ImportDocuments.svg"
     priority = 110
 
     class Outputs:
-        data = Output("Corpus", Corpus)
+        data = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
         skipped_documents = Output("Skipped documents", Table)
 
     #: list of recent paths
@@ -101,7 +101,7 @@ class OWImportDocuments(widget.OWWidget):
     MaxRecentItems = 20
 
     class Warning(widget.OWWidget.Warning):
-        read_error = widget.Msg("{} couldn't be read.")
+        read_error = widget.Msg("无法读取 {}.")
 
     def __init__(self):
         super().__init__()
@@ -129,13 +129,13 @@ class OWImportDocuments(widget.OWWidget):
             "Open/Load Documents", self,
             iconText="\N{HORIZONTAL ELLIPSIS}",
             icon=self.style().standardIcon(QStyle.SP_DirOpenIcon),
-            toolTip="Select a folder from which to load the documents"
+            toolTip="选中一个文件夹以载入文档"
         )
         browseaction.triggered.connect(self.__runOpenDialog)
         reloadaction = QAction(
-            "Reload", self,
+            "重载", self,
             icon=self.style().standardIcon(QStyle.SP_BrowserReload),
-            toolTip="Reload current document set"
+            toolTip="重载当前文档集"
         )
         reloadaction.triggered.connect(self.reload)
         self.__actions = namespace(
@@ -165,18 +165,18 @@ class OWImportDocuments(widget.OWWidget):
         reloadaction.changed.connect(
             lambda: reloadbutton.setEnabled(reloadaction.isEnabled())
         )
-        box = gui.vBox(vbox, "Info")
+        box = gui.vBox(vbox, "信息")
         self.infostack = QStackedWidget()
 
         self.info_area = QLabel(
-            text="No document set selected",
+            text="没有选中文档",
             wordWrap=True
         )
         self.progress_widget = QProgressBar(
             minimum=0, maximum=100
         )
         self.cancel_button = QPushButton(
-            "Cancel",
+            "取消",
             icon=self.style().standardIcon(QStyle.SP_DialogCancelButton),
         )
         self.cancel_button.clicked.connect(self.cancel)
@@ -302,9 +302,9 @@ class OWImportDocuments(widget.OWWidget):
             if n_skipped > 0:
                 text = text + ", {} skipped".format(n_skipped)
         elif self.__state == State.Cancelled:
-            text = "Cancelled"
+            text = "已取消"
         elif self.__state == State.Error:
-            text = "Error state"
+            text = "错误"
         else:
             assert False
 

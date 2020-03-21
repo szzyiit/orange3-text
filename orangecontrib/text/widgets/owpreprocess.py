@@ -913,10 +913,10 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
     settings_version = 3
 
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Error(Orange.widgets.data.owpreprocess.OWPreprocess.Error):
         unknown_error = Msg("{}")

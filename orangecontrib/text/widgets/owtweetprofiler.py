@@ -37,10 +37,10 @@ class OWTweetProfiler(OWWidget, ConcurrentWidgetMixin):
     keywords = ["Twitter"]
 
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     want_main_area = False
     resizing_enabled = False

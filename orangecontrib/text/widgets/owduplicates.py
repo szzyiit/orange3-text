@@ -15,18 +15,18 @@ from orangecontrib.text import Corpus
 
 
 class OWDuplicates(widget.OWWidget):
-    name = 'Duplicate Detection'
-    description = 'Detect & remove duplicates from a corpus.'
+    name = '查重(Duplicate Detection)'
+    description = '侦查并删除重复内容'
     icon = 'icons/Duplicates.svg'
     priority = 700
 
     class Inputs:
-        distances = Input("Distances", DistMatrix)
+        distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
 
     class Outputs:
-        corpus_without_duplicates = Output("Corpus Without Duplicates", Corpus)
-        duplicates = Output("Duplicates Cluster", Corpus)
-        corpus = Output("Corpus", Corpus)
+        corpus_without_duplicates = Output("无重复语料(Corpus Without Duplicates)", Corpus, replaces=['Corpus Without Duplicates'])
+        duplicates = Output("重复簇(Duplicates Cluster)", Corpus, replaces=['Duplicates Cluster'])
+        corpus = Output("语料(Corpus)", Corpus, replaces=['Corpus'])
 
     resizing_enabled = True
 
@@ -35,14 +35,14 @@ class OWDuplicates(widget.OWWidget):
                                         'distances calculated between rows.')
         too_little_documents = Msg('More than one document is required.')
 
-    LINKAGE = ['Single', 'Average', 'Complete', 'Weighted', 'Ward']
+    LINKAGE = ['单一的(Single)', '平均(Average)', '完全(Complete)', '加权(Weighted)', 'Ward']
     linkage_method = settings.Setting(1)
 
     threshold = settings.Setting(.0)
 
     # Cluster variable domain role
     AttributeRole, ClassRole, MetaRole = 0, 1, 2
-    CLUSTER_ROLES = ["Attributes", "Class", "Metas"]
+    CLUSTER_ROLES = ["属性(Attributes)", "类别(Class)", "元(Metas)"]
     cluster_role = settings.Setting(2)
 
     def __init__(self):
@@ -57,10 +57,10 @@ class OWDuplicates(widget.OWWidget):
         self.n_documents = ''
         self.n_unique = ''
         self.n_duplicates = ''
-        info_box = gui.widgetBox(self.controlArea, box='Info')
-        gui.label(info_box, self, 'Documents: %(n_documents)s')
-        gui.label(info_box, self, '  ◦ unique: %(n_unique)s')
-        gui.label(info_box, self, '  ◦ duplicates: %(n_duplicates)s')
+        info_box = gui.widgetBox(self.controlArea, box='信息')
+        gui.label(info_box, self, '文档: %(n_documents)s')
+        gui.label(info_box, self, '  ◦ 唯一的: %(n_unique)s')
+        gui.label(info_box, self, '  ◦ 重复的: %(n_duplicates)s')
 
         # Threshold Histogram & Cluster View
         self.histogram = Histogram(self)
@@ -80,11 +80,11 @@ class OWDuplicates(widget.OWWidget):
         main_area.layout().addWidget(self.table_view)
 
         # Controls
-        gui.comboBox(self.controlArea, self, 'linkage_method', items=self.LINKAGE, box='Linkage',
+        gui.comboBox(self.controlArea, self, 'linkage_method', items=self.LINKAGE, box='链接(Linkage)',
                      callback=self.recalculate_linkage, orientation=Qt.Horizontal)
         self.threshold_spin = gui.doubleSpin(self.controlArea, self, 'threshold',
                                              0, float('inf'), 0.01, decimals=2,
-                                             label='Distance threshold', box='Distances',
+                                             label='距离阈值', box='距离',
                                              callback=self.threshold_changed,
                                              keyboardTracking=False, controlWidth=60)
         self.histogram.region.sigRegionChangeFinished.connect(self.threshold_from_histogram_region)
@@ -92,8 +92,8 @@ class OWDuplicates(widget.OWWidget):
         gui.rubber(self.controlArea)
 
         # Output
-        gui.comboBox(self.controlArea, self, "cluster_role", box='Output',
-                     label='Append Cluster IDs to:', callback=self.send_corpus,
+        gui.comboBox(self.controlArea, self, "cluster_role", box='输出',
+                     label='附加簇 IDs 到:', callback=self.send_corpus,
                      items=self.CLUSTER_ROLES)
 
     def reset(self):

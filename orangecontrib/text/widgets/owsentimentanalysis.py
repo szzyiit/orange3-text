@@ -16,17 +16,17 @@ from orangewidget.utils.filedialogs import RecentPath
 
 
 class OWSentimentAnalysis(OWWidget):
-    name = "Sentiment Analysis"
-    description = "Compute sentiment from text."
+    name = "情感分析(Sentiment Analysis)"
+    description = "根据文本计算情感."
     icon = "icons/SentimentAnalysis.svg"
     priority = 320
     keywords = ["emotion"]
 
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     method_idx = settings.Setting(1)
     autocommit = settings.Setting(True)

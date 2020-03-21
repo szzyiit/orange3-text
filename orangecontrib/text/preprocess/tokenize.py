@@ -10,7 +10,7 @@ from orangecontrib.text.preprocess import Preprocessor
 
 __all__ = ['BaseTokenizer', 'WordPunctTokenizer', 'PunktSentenceTokenizer',
            'RegexpTokenizer', 'WhitespaceTokenizer', 'TweetTokenizer',
-           'BASE_TOKENIZER']
+           'BASE_TOKENIZER', 'Jieba']
 
 
 class BaseTokenizer(Preprocessor):
@@ -28,13 +28,13 @@ class BaseTokenizer(Preprocessor):
 
 
 class WordPunctTokenizer(BaseTokenizer):
-    """ Split by words and (keep) punctuation. """
+    """ 根据单词分词, 保留标点. This example. → (This), (example), (.)"""
     tokenizer = tokenize.WordPunctTokenizer()
     name = 'Word & Punctuation'
 
 
 class PunktSentenceTokenizer(BaseTokenizer):
-    """ Split by full-stop, keeping entire sentences. """
+    """ 根据句子分词. This example. Another example. → (This example.), (Another example.) """
     tokenizer = tokenize.PunktSentenceTokenizer()
     name = 'Sentence'
 
@@ -44,13 +44,13 @@ class PunktSentenceTokenizer(BaseTokenizer):
 
 
 class WhitespaceTokenizer(BaseTokenizer):
-    """ Split only by whitespace. """
+    """ 根据空白分词. This example. → (This), (example.)"""
     tokenizer = tokenize.WhitespaceTokenizer()
     name = 'Whitespace'
 
 
 class RegexpTokenizer(BaseTokenizer):
-    """ Split by regular expression, default keeps only words. """
+    """ 按正则表达式分词，默认只保留单词。 """
     tokenizer_cls = tokenize.RegexpTokenizer
     name = 'Regexp'
 
@@ -86,9 +86,13 @@ class RegexpTokenizer(BaseTokenizer):
 
 
 class TweetTokenizer(BaseTokenizer):
-    """ Pre-trained tokenizer for tweets. """
+    """ 预训练的推特分词器.保留表情符号. This example. :-) #simple → (This), (example), (.), (:-)), (#simple) """
     tokenizer = tokenize.TweetTokenizer()
     name = 'Tweet'
 
 
 BASE_TOKENIZER = WordPunctTokenizer()
+class Jieba(BaseTokenizer):
+    """ 结巴中文分词 """
+    name  = '结巴中文分词'
+    pass

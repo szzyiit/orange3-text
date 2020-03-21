@@ -7,8 +7,8 @@ from orangecontrib.text.widgets.utils import owbasevectorizer, widgets
 
 
 class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
-    name = 'Bag of Words'
-    description = 'Generates a bag of words from the input corpus.'
+    name = '词袋(Bag of Words)'
+    description = '从语料库构造词袋.'
     icon = 'icons/BagOfWords.svg'
     priority = 300
     keywords = ["BOW"]
@@ -27,7 +27,7 @@ class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
         combo = widgets.ComboBox(self, 'wlocal',
                                  items=tuple(BowVectorizer.wlocals.keys()))
         combo.currentIndexChanged.connect(self.on_change)
-        layout.addWidget(QLabel('Term Frequency:'))
+        layout.addWidget(QLabel('词频:'))
         layout.addWidget(combo, row, 1)
 
         row += 1
@@ -35,7 +35,7 @@ class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
                                  items=tuple(BowVectorizer.wglobals.keys()))
 
         combo.currentIndexChanged.connect(self.on_change)
-        layout.addWidget(QLabel('Document Frequency:'))
+        layout.addWidget(QLabel('文档频率:'))
         layout.addWidget(combo, row, 1)
 
         row += 1
@@ -43,7 +43,7 @@ class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
                                  items=tuple(BowVectorizer.norms.keys()))
 
         combo.currentIndexChanged.connect(self.on_change)
-        layout.addWidget(QLabel('Regularization:'))
+        layout.addWidget(QLabel('正则化:'))
         layout.addWidget(combo, row, 1)
 
         return layout

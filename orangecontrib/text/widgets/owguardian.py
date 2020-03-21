@@ -17,14 +17,14 @@ from orangecontrib.text.widgets.utils import CheckListLayout, QueryBox, DatePick
 
 class OWGuardian(OWWidget):
     class CredentialsDialog(OWWidget):
-        name = 'The Guardian Credentials'
+        name = '卫报证书(Credentials)'
         want_main_area = False
         resizing_enabled = False
-        cm_key = CredentialManager('The Guardian API Key')
+        cm_key = CredentialManager('卫报(API Key)')
         key_input = 'test'
 
         class Error(OWWidget.Error):
-            invalid_credentials = Msg('These credentials are invalid.')
+            invalid_credentials = Msg('非法证书.')
 
         def __init__(self, parent):
             super().__init__()
@@ -64,13 +64,13 @@ class OWGuardian(OWWidget):
             elif not silent:
                 self.Error.invalid_credentials()
 
-    name = 'The Guardian'
-    description = 'Fetch articles from The Guardian API.'
+    name = '卫报(The Guardian)'
+    description = '从卫报 API 获取文章.'
     icon = 'icons/TheGuardian.svg'
     priority = 120
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料(Corpus)", Corpus, replaces=['Corpus'])
 
     want_main_area = False
     resizing_enabled = False
@@ -86,9 +86,9 @@ class OWGuardian(OWWidget):
         no_text_fields = Msg('Text features are inferred when none are selected.')
 
     class Error(OWWidget.Error):
-        no_api = Msg('Please provide a valid API key.')
-        no_query = Msg('Please provide a query.')
-        limit_exceeded = Msg('Requests limit reached.')
+        no_api = Msg('请输入正确的API key.')
+        no_query = Msg('请提供查询语句.')
+        limit_exceeded = Msg('达到请求限额.')
 
     def __init__(self):
         super().__init__()
@@ -99,12 +99,12 @@ class OWGuardian(OWWidget):
         # API Key
         self.api_dlg = self.CredentialsDialog(self)
         self.api_dlg.accept(silent=True)
-        gui.button(self.controlArea, self, 'The Guardian API Key',
+        gui.button(self.controlArea, self, '卫报 API Key',
                    callback=self.api_dlg.exec_,
                    focusPolicy=Qt.NoFocus)
 
         # Query
-        query_box = gui.widgetBox(self.controlArea, 'Query', addSpace=True)
+        query_box = gui.widgetBox(self.controlArea, '查询', addSpace=True)
         self.query_box = QueryBox(query_box, self, self.recent_queries,
                                   callback=self.new_query_input)
 
@@ -116,18 +116,18 @@ class OWGuardian(OWWidget):
 
         # Text includes features
         self.controlArea.layout().addWidget(
-            CheckListLayout('Text includes', self, 'text_includes',
+            CheckListLayout('文本包括', self, 'text_includes',
                             self.attributes,
                             cols=2, callback=self.set_text_features))
 
         # Output
-        info_box = gui.hBox(self.controlArea, 'Output')
-        gui.label(info_box, self, 'Articles: %(output_info)s')
+        info_box = gui.hBox(self.controlArea, '输出')
+        gui.label(info_box, self, '文章: %(output_info)s')
 
         # Buttons
         self.button_box = gui.hBox(self.controlArea)
 
-        self.search_button = gui.button(self.button_box, self, 'Search',
+        self.search_button = gui.button(self.button_box, self, '搜索',
                                         self.start_stop,
                                         focusPolicy=Qt.NoFocus)
 
@@ -170,12 +170,12 @@ class OWGuardian(OWWidget):
     def on_start(self):
         self.Error.no_query.clear()
         self.progressBarInit()
-        self.search_button.setText('Stop')
+        self.search_button.setText('停止')
         self.Outputs.corpus.send(None)
 
     @search.on_result
     def on_result(self, result):
-        self.search_button.setText('Search')
+        self.search_button.setText('搜索')
         self.progressBarFinished()
         self.corpus = result
         self.set_text_features()

@@ -44,15 +44,15 @@ class Runner:
 
 class OWWordEnrichment(OWWidget, ConcurrentWidgetMixin):
     # Basic widget info
-    name = "Word Enrichment"
+    name = "词充实(Word Enrichment)"
     description = "Word enrichment analysis for selected documents."
     icon = "icons/SetEnrichment.svg"
     priority = 600
 
     # Input/output
     class Inputs:
-        selected_data = Input("Selected Data", Table)
-        data = Input("Data", Table)
+        selected_data = Input("选中的数据(Selected Data)", Table, replaces=['Selected Data'])
+        data = Input('数据(Data)', Table, replaces=['Data'])
 
     want_main_area = True
 
@@ -81,11 +81,11 @@ class OWWordEnrichment(OWWidget, ConcurrentWidgetMixin):
         self.results = Result()
 
         # info box
-        fbox = gui.widgetBox(self.controlArea, "Info")
-        self.info_fil = gui.label(fbox, self, 'Words displayed: 0')
+        fbox = gui.widgetBox(self.controlArea, "信息")
+        self.info_fil = gui.label(fbox, self, '显示的词: 0')
 
         # Filtering settings
-        fbox = gui.widgetBox(self.controlArea, "Filter")
+        fbox = gui.widgetBox(self.controlArea, "筛选")
         hbox = gui.widgetBox(fbox, orientation=0)
 
         self.chb_p = gui.checkBox(hbox, self, "filter_by_p", "p-value",
@@ -109,7 +109,7 @@ class OWWordEnrichment(OWWidget, ConcurrentWidgetMixin):
         gui.rubber(self.controlArea)
 
         # Word's list view
-        self.cols = ['Word', 'p-value', 'FDR']
+        self.cols = ['词', 'p-value', 'FDR']
         self.sig_words = QTreeWidget()
         self.sig_words.setColumnCount(len(self.cols))
         self.sig_words.setHeaderLabels(self.cols)

@@ -50,7 +50,7 @@ class LdaWidget(TopicWidget):
     Model = LdaWrapper
 
     parameters = (
-        ('num_topics', 'Number of topics', 1, 500, 1, int),
+        ('num_topics', '主题数目', 1, 500, 1, int),
     )
     num_topics = settings.Setting(10)
 
@@ -59,7 +59,7 @@ class LsiWidget(TopicWidget):
     Model = LsiWrapper
 
     parameters = (
-        ('num_topics', 'Number of topics', 1, 500, 1, int),
+        ('num_topics', '主题数目', 1, 500, 1, int),
     )
     num_topics = settings.Setting(10)
 
@@ -97,8 +97,8 @@ def require(attribute):
 
 
 class OWTopicModeling(OWWidget):
-    name = "Topic Modelling"
-    description = "Uncover the hidden thematic structure in a corpus."
+    name = "主题模型(Topic Modelling)"
+    description = "展现语料库隐藏的语义结构."
     icon = "icons/TopicModeling.svg"
     priority = 400
     keywords = ["LDA"]
@@ -107,12 +107,12 @@ class OWTopicModeling(OWWidget):
 
     # Input/output
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input('语料库(Corpus)', Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Table)
-        selected_topic = Output("Selected Topic", Topic)
-        all_topics = Output("All Topics", Table)
+        corpus = Output('语料库(Corpus)', Table, replaces=['Corpus'])
+        selected_topic = Output("选中的主题(Selected Topic)", Topic, replaces=['Selected Topic'])
+        all_topics = Output("所有主题(All Topics)", Table, replaces=['All Topics'])
 
     want_main_area = True
 
@@ -135,7 +135,7 @@ class OWTopicModeling(OWWidget):
     control_area_width = 300
 
     class Warning(OWWidget.Warning):
-        less_topics_found = Msg('Less topics found than requested.')
+        less_topics_found = Msg('比设定的主题少.')
 
     def __init__(self):
         super().__init__()
@@ -153,7 +153,7 @@ class OWTopicModeling(OWWidget):
         method_layout = QVBoxLayout()
         self.controlArea.layout().addLayout(method_layout)
         for i, (method, attr_name) in enumerate(self.methods):
-            widget = method(self, title='Options')
+            widget = method(self, title='选项')
             widget.setFixedWidth(self.control_area_width)
             widget.valueChanged.connect(self.commit)
             self.widgets.append(widget)

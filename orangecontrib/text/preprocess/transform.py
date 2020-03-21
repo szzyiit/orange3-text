@@ -25,32 +25,32 @@ class BaseTransformer(Preprocessor):
 
 
 class LowercaseTransformer(BaseTransformer):
-    """ Converts all characters to lowercase. """
-    name = 'Lowercase'
+    """ 所有字母转为小写. """
+    name = '转为小写'
 
     def _preprocess(self, string: str) -> str:
         return string.lower()
 
 
 class StripAccentsTransformer(BaseTransformer):
-    """ Removes accents. """
-    name = "Remove accents"
+    """ naïve → naive """
+    name = "去除音调符号"
 
     def _preprocess(self, string: str) -> str:
         return strip_accents_unicode(string)
 
 
 class HtmlTransformer(BaseTransformer):
-    """ Removes all html tags from string. """
-    name = "Parse html"
+    """ <a href…>Some text</a> → Some text """
+    name = "去除 html 标签"
 
     def _preprocess(self, string: str) -> str:
         return BeautifulSoup(string, 'html.parser').getText()
 
 
 class UrlRemover(BaseTransformer):
-    """ Removes hyperlinks. """
-    name = "Remove urls"
+    """ 去除超链接. """
+    name = "去除 urls""
     urlfinder = None
 
     def __call__(self, corpus: Corpus, callback: Callable = None) -> Corpus:

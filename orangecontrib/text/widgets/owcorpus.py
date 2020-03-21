@@ -15,17 +15,17 @@ from orangecontrib.text.widgets.utils import widgets, QSize
 
 
 class OWCorpus(OWWidget, ConcurrentWidgetMixin):
-    name = "Corpus"
-    description = "Load a corpus of text documents."
+    name = "语料库(Corpuls)"
+    description = "载入文档语料库."
     icon = "icons/TextFile.svg"
     priority = 100
     replaces = ["orangecontrib.text.widgets.owloadcorpus.OWLoadCorpus"]
 
     class Inputs:
-        data = Input('Data', Table)
+        data = Input('数据(Data)', Table, replaces=['Data'])
 
     class Outputs:
-        corpus = Output('Corpus', Corpus)
+        corpus = Output('语料库(Corpus)', Corpus, replaces=['Corpus'])
 
     want_main_area = False
     resizing_enabled = True
@@ -50,9 +50,9 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
     title_variable = ContextSetting("")
 
     class Error(OWWidget.Error):
-        read_file = Msg("Can't read file ({})")
-        no_text_features_used = Msg("At least one text feature must be used.")
-        corpus_without_text_features = Msg("Corpus doesn't have any textual features.")
+        read_file = Msg("无法读取文件 {} ({})")
+        no_text_features_used = Msg("至少需要使用一个文本特征.")
+        corpus_without_text_features = Msg("语料库没有文本特征.")
 
     def __init__(self):
         OWWidget.__init__(self)
@@ -61,28 +61,28 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         self.corpus = None
 
         # Browse file box
-        fbox = gui.widgetBox(self.controlArea, "Corpus file", orientation=0)
+        fbox = gui.widgetBox(self.controlArea, "语料库文件", orientation=0)
         self.file_widget = widgets.FileWidget(
             recent_files=self.recent_files, icon_size=(16, 16),
             on_open=self.open_file, dialog_format=self.dlgFormats,
-            dialog_title='Open Orange Document Corpus',
-            reload_label='Reload', browse_label='Browse',
+            dialog_title='打开橙现智能文档语料库',
+            reload_label='重载', browse_label='浏览',
             allow_empty=False, minimal_width=250,
         )
         fbox.layout().addWidget(self.file_widget)
 
         # dropdown to select title variable
         self.title_model = DomainModel(
-            valid_types=(StringVariable,), placeholder="(no title)")
+            valid_types=(StringVariable,), placeholder="(无标题)")
         gui.comboBox(
             self.controlArea, self, "title_variable",
-            box="Title variable", model=self.title_model,
+            box="标题变量", model=self.title_model,
             callback=self.update_feature_selection
         )
 
         # Used Text Features
         fbox = gui.widgetBox(self.controlArea, orientation=0)
-        ubox = gui.widgetBox(fbox, "Used text features", addSpace=False)
+        ubox = gui.widgetBox(fbox, "使用的文本特征", addSpace=False)
         self.used_attrs_model = VariableListModel(enable_dnd=True)
         self.used_attrs_view = VariablesListItemView()
         self.used_attrs_view.setModel(self.used_attrs_model)
@@ -94,7 +94,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         aa.rowsRemoved.connect(self.update_feature_selection)
 
         # Ignored Text Features
-        ibox = gui.widgetBox(fbox, "Ignored text features", addSpace=False)
+        ibox = gui.widgetBox(fbox, "忽略的文本特征", addSpace=False)
         self.unused_attrs_model = VariableListModel(enable_dnd=True)
         self.unused_attrs_view = VariablesListItemView()
         self.unused_attrs_view.setModel(self.unused_attrs_model)
@@ -103,7 +103,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         # Documentation Data Sets & Report
         box = gui.hBox(self.controlArea)
         self.browse_documentation = gui.button(
-            box, self, "Browse documentation corpora",
+            box, self, "浏览文档语料库",
             callback=lambda: self.file_widget.browse(
                 get_sample_corpora_dir()),
             autoDefault=False,

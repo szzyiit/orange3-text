@@ -35,9 +35,9 @@ from orangecontrib.text.vectorization.base import BaseVectorizer,\
 class BowVectorizer(BaseVectorizer):
     name = 'BoW Vectorizer'
 
-    COUNT = 'Count'
-    BINARY = 'Binary'
-    SUBLINEAR = 'Sublinear'
+    COUNT = '个数(Count)'
+    BINARY = '二元(Binary)'
+    SUBLINEAR = '个数的对数(sublinear)'
     NONE = '(None)'
     IDF = 'IDF'
     SMOOTH = 'Smooth IDF'

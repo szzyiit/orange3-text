@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: Orange3-Text-zh
+Version: 0.9.3
+Summary: 橙现智能文本挖掘插件.
+Home-page: http://zhaoyang.org.cn
+Author: Bioinformatics Laboratory, FRI UL
+Author-email: info@biolab.si
+License: UNKNOWN
+Description: 橙现智能文本挖掘 Orange3 Text
+        ===================================
+        
+        橙现智能文本挖掘插件, 基于原生插件开发. 提供大量公开数据接口,如NY Times, Twitter 和 PubMed. 
+        此插件还提供诸如文本预处理, 基本词向量方法及可视化组件. 所有功能都可以与橙现智能的其他组件结合使用.
+        
+Keywords: orange3-text-zh,data mining,orange3 add-on
+Platform: UNKNOWN
+Description-Content-Type: text/x-rst

@@ -102,18 +102,18 @@ class TableModel(PyTableModel):
 
 
 class OWWordCloud(OWWidget, ConcurrentWidgetMixin):
-    name = "Word Cloud"
+    name = "词云(Word Cloud)"
     priority = 510
     icon = "icons/WordCloud.svg"
 
     class Inputs:
-        corpus = Input("Corpus", Corpus, default=True)
-        topic = Input("Topic", Topic)
+        corpus = Input("语料库(Corpus)", Corpus, default=True, replaces=['Corpus'])
+        topic = Input("主题(Topic)", Topic, replaces=['Topic'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
-        selected_words = Output("Selected Words", Topic, dynamic=False)
-        word_counts = Output("Word Counts", Table)
+        corpus = Output(" 语料库(Corpus)", Corpus, replaces=['Corpus'])
+        selected_words = Output("选中的词(Selected Words)", Topic, dynamic=False, replaces=['Selected Words'])
+        word_counts = Output("词频(Word Counts)", Table, replaces=['Word Counts'])
 
     graph_name = "webview"
 
@@ -190,25 +190,25 @@ span.selected {color:red !important}
         self.mainArea.layout().addWidget(webview)
 
     def _create_layout(self):
-        box = gui.widgetBox(self.controlArea, "Cloud preferences")
+        box = gui.widgetBox(self.controlArea, "词云选项")
         gui.checkBox(
             box,
             self,
             "words_color",
-            "Color words",
+            "给词上色",
             callback=self.on_cloud_pref_change,
         )
         gui.valueSlider(
             box,
             self,
             "words_tilt",
-            label="Words tilt:",
+            label="词转角:",
             values=list(range(len(TILT_VALUES))),
             callback=self.on_cloud_pref_change,
             labelFormat=lambda x: TILT_VALUES[x],
         )
 
-        box = gui.widgetBox(self.controlArea, "Words && weights")
+        box = gui.widgetBox(self.controlArea, "词 && 权重")
 
         class TableView(gui.TableView):
             def __init__(self, parent):

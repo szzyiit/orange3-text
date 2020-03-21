@@ -56,8 +56,8 @@ class FileWordListMixin:
 
 
 class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
-    """ Remove tokens present in NLTK's language specific lists or a file. """
-    name = 'Stopwords'
+    """ 删除NLTK特定语言列表或文件中的单词(tokens). """
+    name = '停用词'
 
     @wait_nltk_data
     def __init__(self, language='English', path: str = None):
@@ -86,16 +86,16 @@ class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
 
 
 class LexiconFilter(BaseTokenFilter, FileWordListMixin):
-    """ Keep only tokens present in a file. """
-    name = 'Lexicon'
+    """ 只保留文件中的词(tokens). """
+    name = '词典'
 
     def _check(self, token):
         return not self._lexicon or token in self._lexicon
 
 
 class RegexpFilter(BaseTokenFilter):
-    """ Remove tokens matching this regular expressions. """
-    name = 'Regexp'
+    """ 根据正表达式删除, 默认删除标点符号. """
+    name = '正则表达式'
 
     def __init__(self, pattern=r'\.|,|:|!|\?'):
         self._pattern = pattern
@@ -152,9 +152,8 @@ class FitDictionaryFilter(BaseTokenFilter):
 
 
 class FrequencyFilter(FitDictionaryFilter):
-    """Remove tokens with document frequency outside this range;
-    use either absolute or relative frequency. """
-    name = 'Document frequency'
+    """移除文档频率超出此范围的标记。使用绝对或相对频率。 """
+    name = '文档频率'
 
     def __init__(self, min_df=0., max_df=1.):
         super().__init__()

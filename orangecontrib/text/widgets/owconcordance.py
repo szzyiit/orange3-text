@@ -170,18 +170,18 @@ class ConcordanceModel(QAbstractTableModel):
 
 
 class OWConcordance(OWWidget):
-    name = "Concordance"
-    description = "Display the context of the word."
+    name = "词上下文(Concordance)"
+    description = "显示词的上下文."
     icon = "icons/Concordance.svg"
     priority = 520
 
     class Inputs:
-        corpus = Input("Corpus", Corpus)
-        query_word = Input("Query Word", Topic)
+        corpus = Input('语料库(Corpus)', Corpus, replaces=['Corpus'])
+        query_word = Input("查询词(Query Word)", Topic, replaces=['Query Word'])
 
     class Outputs:
-        selected_documents = Output("Selected Documents", Corpus)
-        concordances = Output("Concordances", Corpus)
+        selected_documents = Output("选中的文档(Selected Documents)", Corpus, replaces=['Selected Documents'])
+        concordances = Output("上下文(Concordances)", Corpus, replaces=['Concordances'])
 
     settingsHandler = PerfectDomainContextHandler(
         match_values = PerfectDomainContextHandler.MATCH_VALUES_ALL
@@ -192,8 +192,7 @@ class OWConcordance(OWWidget):
     selected_rows = Setting([], schema_only=True)
 
     class Warning(OWWidget.Warning):
-        multiple_words_on_input = Msg("Multiple query words on input. "
-                                      "Only the first one is considered!")
+        multiple_words_on_input = Msg("输入有多个查询词. 只考虑第一个!")
 
     def __init__(self):
         super().__init__()
@@ -205,14 +204,14 @@ class OWConcordance(OWWidget):
         self.is_word_on_input = False
 
         # Info attributes
-        info_box = gui.widgetBox(self.controlArea, 'Info')
-        gui.label(info_box, self, 'Tokens: %(n_tokens)s')
-        gui.label(info_box, self, 'Types: %(n_types)s')
-        gui.label(info_box, self, 'Matching: %(n_matching)s')
+        info_box = gui.widgetBox(self.controlArea, '信息')
+        gui.label(info_box, self, '词(Tokens): %(n_tokens)s')
+        gui.label(info_box, self, '类型: %(n_types)s')
+        gui.label(info_box, self, '匹配: %(n_matching)s')
 
         # Width parameter
         gui.spin(self.controlArea, self, 'context_width', 3, 10, box=True,
-                 label="Number of words:", callback=self.set_width)
+                 label="显示前后词数目:", callback=self.set_width)
 
         gui.rubber(self.controlArea)
 
@@ -222,7 +221,7 @@ class OWConcordance(OWWidget):
             c_box, self, 'word', orientation=Qt.Horizontal,
             sizePolicy=QSizePolicy(QSizePolicy.MinimumExpanding,
                                    QSizePolicy.Fixed),
-            label='Query:', callback=self.set_word, callbackOnType=True)
+            label='查询:', callback=self.set_word, callbackOnType=True)
         self.input.setFocus()
 
         # Concordances view

@@ -1,0 +1,12 @@
+[orange.canvas.help]
+html-index = orangecontrib.text.widgets:WIDGET_HELP_PATH
+
+[orange.widgets]
+文本挖掘(Text Mining) = orangecontrib.text.widgets
+
+[orange.widgets.tutorials]
+exampletutorials = orangecontrib.text.tutorials
+
+[orange3.addon]
+text = orangecontrib.text
+

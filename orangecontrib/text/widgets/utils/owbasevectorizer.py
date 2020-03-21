@@ -14,10 +14,10 @@ class OWBaseVectorizer(OWWidget):
     """
     # Input/output
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     want_main_area = False
     resizing_enabled = False
@@ -35,12 +35,12 @@ class OWBaseVectorizer(OWWidget):
         self.new_corpus = None
         self.new_attrs = None
 
-        box = QGroupBox(title='Options')
+        box = QGroupBox(title='选项')
         box.setLayout(self.create_configuration_layout())
         self.controlArea.layout().addWidget(box)
 
         output_layout = gui.hBox(self.controlArea)
-        gui.checkBox(output_layout, self, "hidden_cb", "Hide bow attributes",
+        gui.checkBox(output_layout, self, "hidden_cb", "隐藏词袋属性",
                      callback=self.hide_attrs)
 
         buttons_layout = gui.hBox(self.controlArea)
