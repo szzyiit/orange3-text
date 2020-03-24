@@ -16,3 +16,8 @@ docx2txt>=0.6
 lxml
 biopython # Enables Pubmed widget.
 ufal.udpipe >=1.2.0.3
+future
+LTTL >= 2.0.9
+chardet
+paddlepaddle-tiny==1.6.1
+jieba

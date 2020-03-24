@@ -79,7 +79,10 @@ class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
         except LookupError:  # when no NLTK data is available
             pass
 
-        return sorted(file.capitalize() for file in stopwords_listdir)
+        all_stopwords_listdir = ['中文停用词表', '哈工大停用词表	', '百度停用词表', '四川大学停用词库	'] + \
+                                sorted(file.capitalize() for file in stopwords_listdir)
+
+        return all_stopwords_listdir
 
     def _check(self, token):
         return token not in self.__stopwords and token not in self._lexicon

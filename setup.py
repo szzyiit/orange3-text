@@ -13,28 +13,27 @@ try:
 except ImportError:
     pass
 
-NAME = 'Orange3-Text'
+NAME = 'Orange3-Text-zh'
 
 MAJOR = 1
 MINOR = 4
 MICRO = 0
-IS_RELEASED = False
+IS_RELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 FULL_VERSION = VERSION
 
-DESCRIPTION = 'Orange3 TextMining add-on.'
+DESCRIPTION = 'Orange3 TextMining add-on(Chinese translation).'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.pypi')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'info@biolab.si'
-URL = "https://github.com/biolab/orange3-text"
-DOWNLOAD_URL = "https://github.com/biolab/orange3-text/tarball/{}".format(VERSION)
+URL = "http://zhaoyang.org.cn"
 
 
 KEYWORDS = [
     # [PyPi](https://pypi.python.org) packages with keyword "orange3 add-on"
     # can be installed using the Orange Add-on Manager
-    'orange3-text',
+    'orange3-text-zh',
     'data mining',
     'orange3 add-on',
 ]
@@ -55,7 +54,7 @@ ENTRY_POINTS = {
         # Syntax: category name = path.to.package.containing.widgets
         # Widget category specification can be seen in
         #    orangecontrib/text/widgets/__init__.py
-        'Text Mining = orangecontrib.text.widgets',
+        '文本挖掘(Text Mining) = orangecontrib.text.widgets',
     ),
 
     # Register widget help
@@ -159,7 +158,6 @@ if __name__ == '__main__':
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         url=URL,
-        download_url=DOWNLOAD_URL,
         packages=find_packages(),
         include_package_data=True,
         install_requires=INSTALL_REQUIRES,

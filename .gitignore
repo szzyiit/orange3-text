@@ -1,8 +1,8 @@
 # Build files
 build
 dist
-Orange3_Text.egg-info/*
-Orange3_Text.egg-info
+Orange3_Text_zh.egg-info/*
+Orange3_Text_zh.egg-info
 doc/_build
 *.so
 *.pyd

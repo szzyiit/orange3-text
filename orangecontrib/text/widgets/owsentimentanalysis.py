@@ -66,7 +66,7 @@ class OWSentimentAnalysis(OWWidget):
 
         self.form = QGridLayout()
         self.method_box = box = gui.radioButtonsInBox(
-            self.controlArea, self, "method_idx", [], box="Method",
+            self.controlArea, self, "method_idx", [], box="方法",
             orientation=self.form, callback=self._method_changed)
         self.liu_hu = gui.appendRadioButton(box, "Liu Hu", addToLayout=False)
         self.liu_lang = gui.comboBox(None, self, 'liu_language',
@@ -75,8 +75,7 @@ class OWSentimentAnalysis(OWWidget):
                                      items=self.LANG,
                                      callback=self._method_changed)
         self.vader = gui.appendRadioButton(box, "Vader", addToLayout=False)
-        self.multi_sent = gui.appendRadioButton(box, "Multilingual "
-                                                     "sentiment",
+        self.multi_sent = gui.appendRadioButton(box, "多国语言",
                                                 addToLayout=False)
         self.multi_box = gui.comboBox(None, self, 'multi_language',
                                       sendSelectedValue=True,
@@ -102,11 +101,11 @@ class OWSentimentAnalysis(OWWidget):
         self.__negfile_loader.file_loaded.connect(self.__neg_loader_activated)
 
         self.form.addWidget(self.liu_hu, 0, 0, Qt.AlignLeft)
-        self.form.addWidget(QLabel("Language:"), 0, 1, Qt.AlignRight)
+        self.form.addWidget(QLabel("语言:"), 0, 1, Qt.AlignRight)
         self.form.addWidget(self.liu_lang, 0, 2, Qt.AlignRight)
         self.form.addWidget(self.vader, 1, 0, Qt.AlignLeft)
         self.form.addWidget(self.multi_sent, 2, 0, Qt.AlignLeft)
-        self.form.addWidget(QLabel("Language:"), 2, 1, Qt.AlignRight)
+        self.form.addWidget(QLabel("语言:"), 2, 1, Qt.AlignRight)
         self.form.addWidget(self.multi_box, 2, 2, Qt.AlignRight)
         self.form.addWidget(self.senti_art, 3, 0, Qt.AlignLeft)
         self.form.addWidget(QLabel("Language:"), 3, 1, Qt.AlignRight)
@@ -130,8 +129,8 @@ class OWSentimentAnalysis(OWWidget):
         self.online = self.multi_dict.online
         self.check_sentiment_online()
 
-        ac = gui.auto_commit(self.controlArea, self, 'autocommit', 'Commit',
-                             'Autocommit is on')
+        ac = gui.auto_commit(self.controlArea, self, 'autocommit', '发送',
+                             '自动发送')
         ac.layout().insertSpacing(1, 8)
 
     def __pos_loader_activated(self):

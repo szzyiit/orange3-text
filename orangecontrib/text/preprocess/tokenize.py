@@ -1,6 +1,8 @@
 from typing import List, Callable
 import re
 from nltk import tokenize
+import jieba
+import pkuseg
 
 from Orange.util import wrap_callback, dummy_callback
 
@@ -94,5 +96,48 @@ class TweetTokenizer(BaseTokenizer):
 BASE_TOKENIZER = WordPunctTokenizer()
 class Jieba(BaseTokenizer):
     """ 结巴中文分词 """
+    jieba.enable_paddle()  # 启动paddle模式
     name  = '结巴中文分词'
-    pass
+    tokenizer = jieba
+
+    def __call__(self, sent):
+        if isinstance(sent, str):
+            return self.tokenize(sent)
+        return self.tokenize_sents(sent)
+
+    def tokenize(self, string):
+        return list(filter(lambda x: x != '', self.tokenizer.cut(string, use_paddle=True)))
+
+    def tokenize_sents(self, strings):
+        return [self.tokenize(string) for string in strings]
+
+
+class PKU(BaseTokenizer):
+    """ 北大多领域中文分词工具 """
+    name  = '北大中文分词'
+    models = ['default', 'news', 'web', 'medicine', 'tourism']
+    # tokenizer = pkuseg.pkuseg()
+
+    def __init__(self, model_index=0):
+        self._model_index = model_index
+        self.tokenizer = pkuseg.pkuseg(model_name=self.models[self.model_index])
+
+    @property
+    def model_index(self):
+        return self._model_index
+
+    @model_index.setter
+    def model_index(self, value):
+        self._model_index = value
+        self.tokenizer = pkuseg.pkuseg(model_name=self.models[self.model_index])
+
+    def __call__(self, sent):
+        if isinstance(sent, str):
+            return self.tokenize(sent)
+        return self.tokenize_sents(sent)
+
+    def tokenize(self, string):
+        return list(filter(lambda x: x != '', self.tokenizer.cut(string)))
+
+    def tokenize_sents(self, strings):
+        return [self.tokenize(string) for string in strings]
