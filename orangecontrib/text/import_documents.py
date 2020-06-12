@@ -27,7 +27,7 @@ from Orange.util import Registry
 from orangecontrib.text.corpus import Corpus
 
 
-DefaultFormats = ("docx", "odt", "txt", "pdf", "xml")
+DefaultFormats = ("docx", "odt", "txt", "pdf", "xml", "js", 'css', 'html', 'java', 'py')
 
 TextData = namedtuple(
     "Text",
@@ -84,7 +84,7 @@ class Reader(metaclass=Registry):
 
 
 class TxtReader(Reader):
-    ext = [".txt"]
+    ext = [".txt", ".js", '.css', '.html', '.java', '.py']
 
     def read_file(self):
         encoding = detect_encoding(self.path)

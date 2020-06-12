@@ -1,5 +1,5 @@
-Orange3 Text
-============
+橙现智能文本挖掘 Orange3 Text
+===================================
 
 Orange add-on for text mining. It provides access to publicly available data,
 like NY Times, Twitter and PubMed. Further, it provides tools for preprocessing,

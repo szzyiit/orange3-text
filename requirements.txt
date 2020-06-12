@@ -1,4 +1,3 @@
-scipy
 nltk>=3.0.5     # TweetTokenizer introduced in 3.0.5
 scikit-learn
 numpy
@@ -21,3 +20,4 @@ LTTL >= 2.0.9
 chardet
 paddlepaddle-tiny==1.6.1
 jieba
+pkuseg

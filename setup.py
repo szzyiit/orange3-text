@@ -22,7 +22,7 @@ IS_RELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 FULL_VERSION = VERSION
 
-DESCRIPTION = 'Orange3 TextMining add-on(Chinese translation).'
+DESCRIPTION = '橙现智能文本挖掘插件.'
 README_FILE = os.path.join(os.path.dirname(__file__), 'README.pypi')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
@@ -153,7 +153,11 @@ if __name__ == '__main__':
         name=NAME,
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
+<<<<<<< HEAD
         long_description_content_type='text/markdown',
+=======
+        long_description_content_type='text/x-rst',
+>>>>>>> Add more file format to importdoc and delete uncommom widgets
         version=FULL_VERSION,
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
