@@ -24,6 +24,8 @@ class OWCorpusViewer(OWWidget):
     description = "显示语料库内容."
     icon = "icons/CorpusViewer.svg"
     priority = 500
+    keywords = ['yuliaochakan', 'chakan']
+    category = 'text'
 
     class Inputs:
         corpus = Input("语料库(Corpus)", Corpus, replaces=["Data", 'Corpus'])
@@ -64,7 +66,7 @@ class OWCorpusViewer(OWWidget):
         gui.label(info_box, self, '文档: %(n_documents)s')
         gui.label(info_box, self, '预处: %(is_preprocessed)s')
         gui.label(info_box, self, '  ◦ 词(Token): %(n_tokens)s')
-        gui.label(info_box, self, '  ◦ : %(n_types)s')
+        gui.label(info_box, self, '  ◦ 类型: %(n_types)s')
         gui.label(info_box, self, 'POS 标签: %(is_pos_tagged)s')
         gui.label(info_box, self, 'N-grams 范围: %(ngram_range)s')
         gui.label(info_box, self, '匹配: %(n_matching)s')

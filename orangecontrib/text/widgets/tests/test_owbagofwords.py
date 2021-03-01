@@ -16,8 +16,8 @@ class TestBagOfWords(WidgetTest):
         Just basic test.
         GH-247
         """
-        self.send_signal("Corpus", self.corpus)
-        self.send_signal("Corpus", None)
+        self.send_signal("语料库(Corpus)", self.corpus)
+        self.send_signal("语料库(Corpus)", None)
 
 
 if __name__ == "__main__":

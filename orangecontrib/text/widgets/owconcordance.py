@@ -174,6 +174,8 @@ class OWConcordance(OWWidget):
     description = "显示词的上下文."
     icon = "icons/Concordance.svg"
     priority = 520
+    keywords = ['cishangxianwen', 'shangxianwen']
+    category = 'text'
 
     class Inputs:
         corpus = Input('语料库(Corpus)', Corpus, replaces=['Corpus'])

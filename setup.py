@@ -16,8 +16,8 @@ except ImportError:
 NAME = 'Orange3-Text-zh'
 
 MAJOR = 1
-MINOR = 4
-MICRO = 0
+MINOR = 3
+MICRO = 1
 IS_RELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 FULL_VERSION = VERSION
@@ -27,7 +27,7 @@ README_FILE = os.path.join(os.path.dirname(__file__), 'README.pypi')
 LONG_DESCRIPTION = open(README_FILE).read()
 AUTHOR = 'Bioinformatics Laboratory, FRI UL'
 AUTHOR_EMAIL = 'info@biolab.si'
-URL = "http://zhaoyang.org.cn"
+URL = "https://chengxianzn.one/"
 
 
 KEYWORDS = [
@@ -153,11 +153,7 @@ if __name__ == '__main__':
         name=NAME,
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
-<<<<<<< HEAD
         long_description_content_type='text/markdown',
-=======
-        long_description_content_type='text/x-rst',
->>>>>>> Add more file format to importdoc and delete uncommom widgets
         version=FULL_VERSION,
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
@@ -169,8 +165,5 @@ if __name__ == '__main__':
         keywords=KEYWORDS,
         namespace_packages=['orangecontrib'],
         zip_safe=False,
-        test_suite="setup.temp_test_suite",
-        extras_require={
-            'test': ['coverage']
-            },
+        test_suite="setup.temp_test_suite"
     )

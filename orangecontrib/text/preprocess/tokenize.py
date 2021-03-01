@@ -12,7 +12,7 @@ from orangecontrib.text.preprocess import Preprocessor
 
 __all__ = ['BaseTokenizer', 'WordPunctTokenizer', 'PunktSentenceTokenizer',
            'RegexpTokenizer', 'WhitespaceTokenizer', 'TweetTokenizer',
-           'BASE_TOKENIZER', 'Jieba']
+           'BASE_TOKENIZER', 'JiebaTokenizer']
 
 
 class BaseTokenizer(Preprocessor):
@@ -32,13 +32,13 @@ class BaseTokenizer(Preprocessor):
 class WordPunctTokenizer(BaseTokenizer):
     """ 根据单词分词, 保留标点. This example. → (This), (example), (.)"""
     tokenizer = tokenize.WordPunctTokenizer()
-    name = 'Word & Punctuation'
+    name = '单词 & 标点'
 
 
 class PunktSentenceTokenizer(BaseTokenizer):
     """ 根据句子分词. This example. Another example. → (This example.), (Another example.) """
     tokenizer = tokenize.PunktSentenceTokenizer()
-    name = 'Sentence'
+    name = '句子'
 
     @wait_nltk_data
     def __init__(self):
@@ -48,13 +48,13 @@ class PunktSentenceTokenizer(BaseTokenizer):
 class WhitespaceTokenizer(BaseTokenizer):
     """ 根据空白分词. This example. → (This), (example.)"""
     tokenizer = tokenize.WhitespaceTokenizer()
-    name = 'Whitespace'
+    name = '空白'
 
 
 class RegexpTokenizer(BaseTokenizer):
     """ 按正则表达式分词，默认只保留单词。 """
     tokenizer_cls = tokenize.RegexpTokenizer
-    name = 'Regexp'
+    name = '正则表达式'
 
     def __init__(self, pattern=r'\w+'):
         super().__init__()
@@ -90,54 +90,28 @@ class RegexpTokenizer(BaseTokenizer):
 class TweetTokenizer(BaseTokenizer):
     """ 预训练的推特分词器.保留表情符号. This example. :-) #simple → (This), (example), (.), (:-)), (#simple) """
     tokenizer = tokenize.TweetTokenizer()
-    name = 'Tweet'
+    name = '推特分词'
+
+
+class JiebaTokenizer(BaseTokenizer):
+    """ 结巴中文分词 """
+    jieba.enable_paddle()  # 启动paddle模式
+    name = '结巴中文分词'
+    tokenizer = jieba
+
+    def __call__(self, corpus: Corpus,  callback: Callable = None):
+        if callback is None:
+            callback = dummy_callback
+        callback(0, "Tokenizing...")
+        self.tokenize_sents(corpus)
+        return self._store_tokens_from_documents(corpus, callback)
+
+    def _preprocess(self, string):
+        return list(filter(lambda x: x != '', self.tokenizer.cut(string, use_paddle=True)))
+
+    def tokenize_sents(self, corpus):
+        return [self._preprocess(string) for string in corpus.documents]
+    
 
 
 BASE_TOKENIZER = WordPunctTokenizer()
-class Jieba(BaseTokenizer):
-    """ 结巴中文分词 """
-    jieba.enable_paddle()  # 启动paddle模式
-    name  = '结巴中文分词'
-    tokenizer = jieba
-
-    def __call__(self, sent):
-        if isinstance(sent, str):
-            return self.tokenize(sent)
-        return self.tokenize_sents(sent)
-
-    def tokenize(self, string):
-        return list(filter(lambda x: x != '', self.tokenizer.cut(string, use_paddle=True)))
-
-    def tokenize_sents(self, strings):
-        return [self.tokenize(string) for string in strings]
-
-
-class PKU(BaseTokenizer):
-    """ 北大多领域中文分词工具 """
-    name  = '北大中文分词'
-    models = ['default', 'news', 'web', 'medicine', 'tourism']
-    # tokenizer = pkuseg.pkuseg()
-
-    def __init__(self, model_index=0):
-        self._model_index = model_index
-        self.tokenizer = pkuseg.pkuseg(model_name=self.models[self.model_index])
-
-    @property
-    def model_index(self):
-        return self._model_index
-
-    @model_index.setter
-    def model_index(self, value):
-        self._model_index = value
-        self.tokenizer = pkuseg.pkuseg(model_name=self.models[self.model_index])
-
-    def __call__(self, sent):
-        if isinstance(sent, str):
-            return self.tokenize(sent)
-        return self.tokenize_sents(sent)
-
-    def tokenize(self, string):
-        return list(filter(lambda x: x != '', self.tokenizer.cut(string)))
-
-    def tokenize_sents(self, strings):
-        return [self.tokenize(string) for string in strings]

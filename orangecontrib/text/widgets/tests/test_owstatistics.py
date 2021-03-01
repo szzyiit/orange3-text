@@ -95,7 +95,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_words_count(self):
         """ Test words count statistic """
-        data = self._compute_features("Word count")
+        data = self._compute_features("词数量")
         np.testing.assert_array_equal(data.X.flatten(), [8, 9, 11, 9])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -103,7 +103,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_characters_count(self):
         """ Test characters count statistic """
-        data = self._compute_features("Character count")
+        data = self._compute_features("字母数量")
         np.testing.assert_array_equal(data.X.flatten(), [47, 44, 48, 51])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -111,7 +111,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_n_gram_count(self):
         """ Test n-grams count statistic """
-        data = self._compute_features("N-gram count")
+        data = self._compute_features("N-gram 数量")
         np.testing.assert_array_equal(data.X.flatten(), [10, 12, 13, 12])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -119,7 +119,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_average_word_len(self):
         """ Test word density statistic """
-        data = self._compute_features("Average word length")
+        data = self._compute_features("平均词长")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [5.875, 4.888889, 4.363636, 5.666667]
         )
@@ -129,7 +129,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_punctuations_cont(self):
         """ Test punctuations count statistic """
-        data = self._compute_features("Punctuation count")
+        data = self._compute_features("标点数量")
         np.testing.assert_array_equal(data.X.flatten(), [2, 3, 2, 3])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -137,7 +137,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_capitals_count(self):
         """ Test capitals count statistic """
-        data = self._compute_features("Capital letter count")
+        data = self._compute_features("大写字母数量")
         np.testing.assert_array_equal(data.X.flatten(), [1, 1, 2, 1])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -145,7 +145,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_vowels_count(self):
         """ Test vowels count statistic """
-        data = self._compute_features("Vowel count", "a,e,i,o,u")
+        data = self._compute_features("元音数量", "a,e,i,o,u")
         np.testing.assert_array_equal(data.X.flatten(), [19, 20, 23, 20])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -154,7 +154,7 @@ class TestStatisticsWidget(WidgetTest):
     def test_consonants_count(self):
         """ Test consonants count statistic """
         data = self._compute_features(
-            "Consonant count", "b,c,d,f,g,h,j,k,l,m,n,p,q,r,s,t,v,w,x,y,z"
+            "辅音数量", "b,c,d,f,g,h,j,k,l,m,n,p,q,r,s,t,v,w,x,y,z"
         )
         np.testing.assert_array_equal(data.X.flatten(), [28, 24, 25, 30])
 
@@ -163,13 +163,13 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_per_cent_unique_words(self):
         """ Test per-cent unique words statistic """
-        data = self._compute_features("Per cent unique words")
+        data = self._compute_features("单个词占比")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [1, 1, 0.909091, 1]
         )
 
         self.corpus[1][-1] = ""
-        data = self._compute_features("Per cent unique words")
+        data = self._compute_features("单个词占比")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [1, np.nan, 0.909091, 1]
         )
@@ -179,10 +179,10 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_starts_with(self):
         """ Test starts with count statistic """
-        data = self._compute_features("Starts with", "a")
+        data = self._compute_features("以...开头", "a")
         np.testing.assert_array_almost_equal(data.X.flatten(), [2, 0, 2, 2])
 
-        data = self._compute_features("Starts with", "ap")
+        data = self._compute_features("以...开头", "ap")
         np.testing.assert_array_almost_equal(data.X.flatten(), [0, 0, 0, 1])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -190,10 +190,10 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_ends_with(self):
         """ Test ends with count statistic """
-        data = self._compute_features("Ends with", "t")
+        data = self._compute_features("以...结尾", "t")
         np.testing.assert_array_almost_equal(data.X.flatten(), [3, 3, 1, 2])
 
-        data = self._compute_features("Ends with", "et")
+        data = self._compute_features("以...结尾", "et")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 1, 0, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -201,13 +201,13 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_contains(self):
         """ Test contains count statistic """
-        data = self._compute_features("Contains", "t")
+        data = self._compute_features("包含", "t")
         np.testing.assert_array_almost_equal(data.X.flatten(), [5, 4, 4, 9])
 
-        data = self._compute_features("Contains", "et")
+        data = self._compute_features("包含", "et")
         np.testing.assert_array_almost_equal(data.X.flatten(), [2, 1, 0, 0])
 
-        data = self._compute_features("Contains", "is")
+        data = self._compute_features("包含", "is")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 2, 2, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -216,11 +216,11 @@ class TestStatisticsWidget(WidgetTest):
     def test_regex(self):
         """ Test regex statistic """
         # words that contains digit
-        data = self._compute_features("Regex", "\w*\d\w*")
+        data = self._compute_features("正则表达式", "\w*\d\w*")
         np.testing.assert_array_almost_equal(data.X.flatten(), [0, 0, 0, 1])
 
         # words that contains digit
-        data = self._compute_features("Regex", "\w*is\w*")
+        data = self._compute_features("正则表达式", "\w*is\w*")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 2, 2, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -233,7 +233,7 @@ class TestStatisticsWidget(WidgetTest):
         - test with corpus that has pos tags
         """
         self.send_signal(self.widget.Inputs.corpus, self.corpus)
-        self._set_feature("POS tag", "NN")
+        self._set_feature("POS 标记", "NN")
         self.widget.apply()
         self.wait_until_finished()
         res = self.get_output(self.widget.Outputs.corpus)
@@ -244,7 +244,7 @@ class TestStatisticsWidget(WidgetTest):
         result = tagger(self.corpus)
 
         self.send_signal(self.widget.Inputs.corpus, result)
-        self._set_feature("POS tag", "NN")
+        self._set_feature("POS 标记", "NN")
         self.widget.apply()
         self.wait_until_finished()
         res = self.get_output(self.widget.Outputs.corpus)
@@ -259,9 +259,9 @@ class TestStatisticsWidget(WidgetTest):
         """
         self.send_signal(self.widget.Inputs.corpus, self.corpus)
 
-        wc_index = STATISTICS_NAMES.index("Word count")
-        starts_with_index = STATISTICS_NAMES.index("Starts with")
-        capital_counts_index = STATISTICS_NAMES.index("Capital letter count")
+        wc_index = STATISTICS_NAMES.index("词数量")
+        starts_with_index = STATISTICS_NAMES.index("以...开头")
+        capital_counts_index = STATISTICS_NAMES.index("大写字母数量")
         self.widget.active_rules = [
             (wc_index, ""),
             (starts_with_index, "a"),
@@ -333,7 +333,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_compute_values(self):
         """ Test compute values on new data """
-        data = self._compute_features("Word count")
+        data = self._compute_features("词数量")
 
         computed = Corpus.from_table(data.domain, self.book_data)
         self.assertEqual(data.domain, computed.domain)

@@ -101,7 +101,8 @@ class OWTopicModeling(OWWidget):
     description = "展现语料库隐藏的语义结构."
     icon = "icons/TopicModeling.svg"
     priority = 400
-    keywords = ["LDA"]
+    keywords = ["LDA", 'zhutimoxing']
+    category = 'text'
 
     settingsHandler = DomainContextHandler()
 

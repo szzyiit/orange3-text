@@ -85,10 +85,13 @@ class OWImportDocuments(widget.OWWidget):
     description = "从文件夹载入文档."
     icon = "icons/ImportDocuments.svg"
     priority = 110
+    keywords = ['zairu', 'jiazai', 'wenjianjiazairu']
+    category = 'text'
 
     class Outputs:
         data = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
-        skipped_documents = Output("Skipped documents", Table)
+        skipped_documents = Output(
+            "忽略的文档(Skipped documents)", Table, replaces=['Skipped documents'])
 
     #: list of recent paths
     recent_paths: List[RecentPath] = settings.Setting([])

@@ -20,6 +20,8 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
     icon = "icons/TextFile.svg"
     priority = 100
     replaces = ["orangecontrib.text.widgets.owloadcorpus.OWLoadCorpus"]
+    keywords = ['yuliaoku']
+    category = 'text'
 
     class Inputs:
         data = Input('数据(Data)', Table, replaces=['Data'])

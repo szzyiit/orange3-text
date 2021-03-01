@@ -11,7 +11,8 @@ class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
     description = '从语料库构造词袋.'
     icon = 'icons/BagOfWords.svg'
     priority = 300
-    keywords = ["BOW"]
+    keywords = ["BOW", 'cidai']
+    category = 'text'
 
     Method = BowVectorizer
 

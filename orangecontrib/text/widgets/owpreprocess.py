@@ -26,12 +26,11 @@ from Orange.widgets.widget import Input, Output, Msg, Message
 from orangecontrib.text import Corpus
 from orangecontrib.text.misc import nltk_data_dir
 from orangecontrib.text.preprocess import *
-from orangecontrib.text.preprocess.normalize import UDPipeStopIteration
 from orangecontrib.text.tag import AveragedPerceptronTagger, MaxEntTagger, \
     POSTagger
 from orangecontrib.text.tag.pos import StanfordPOSTaggerError
 
-_DEFAULT_NONE = "(none)"
+_DEFAULT_NONE = "(无)"
 
 
 def icon_path(basename):
@@ -62,37 +61,6 @@ class ComboBox(QComboBox):
         self.addItems(items)
         self.setCurrentText(value)
         self.currentTextChanged.connect(callback)
-
-
-class UDPipeComboBox(QComboBox):
-    def __init__(self, master: BaseEditor, value: str, default: str,
-                 callback: Callable):
-        super().__init__(master)
-        self.__items = []  # type: List
-        self.__default_lang = default
-        self.add_items(value)
-        self.currentTextChanged.connect(callback)
-        self.setMinimumWidth(80)
-
-    @property
-    def items(self) -> List:
-        return UDPipeLemmatizer().models.supported_languages
-
-    def add_items(self, value: str):
-        self.__items = self.items
-        self.addItems(self.__items)
-        if value in self.__items:
-            self.setCurrentText(value)
-        elif self.__default_lang in self.__items:
-            self.setCurrentText(self.__default_lang)
-        elif self.__items:
-            self.setCurrentIndex(0)
-
-    def showPopup(self):
-        if self.__items != self.items:
-            self.clear()
-            self.add_items(self.currentText())
-        super().showPopup()
 
 
 class RangeSpins(QHBoxLayout):
@@ -329,12 +297,13 @@ class TransformationModule(MultipleMethodModule):
 
 
 class TokenizerModule(SingleMethodModule):
-    Word, Whitespace, Sentence, Regexp, Tweet = range(5)
+    Word, Whitespace, Sentence, Regexp, Tweet, Jieba = range(6)
     Methods = {Word: WordPunctTokenizer,
                Whitespace: WhitespaceTokenizer,
                Sentence: PunktSentenceTokenizer,
                Regexp: RegexpTokenizer,
-               Tweet: TweetTokenizer}
+               Tweet: TweetTokenizer,
+               Jieba: JiebaTokenizer}
     DEFAULT_METHOD = Regexp
     DEFAULT_PATTERN = r"\w+"
 
@@ -344,7 +313,7 @@ class TokenizerModule(SingleMethodModule):
         validator = RegexpTokenizer.validate_regexp
         self.__edit = ValidatedLineEdit(self.__pattern, validator)
         self.__edit.editingFinished.connect(self.__edit_finished)
-        self.layout().addWidget(QLabel("Pattern:"), 3, 1)
+        self.layout().addWidget(QLabel("模式:"), 3, 1)
         self.layout().addWidget(self.__edit, 3, 2)
 
     def setParameters(self, params: Dict):
@@ -384,11 +353,10 @@ class TokenizerModule(SingleMethodModule):
 
 
 class NormalizationModule(SingleMethodModule):
-    Porter, Snowball, WordNet, UDPipe = range(4)
+    Porter, Snowball, WordNet = range(3)
     Methods = {Porter: PorterStemmer,
                Snowball: SnowballStemmer,
-               WordNet: WordNetLemmatizer,
-               UDPipe: UDPipeLemmatizer}
+               WordNet: WordNetLemmatizer}
     DEFAULT_METHOD = Porter
     DEFAULT_LANGUAGE = "English"
     DEFAULT_USE_TOKE = False
@@ -396,20 +364,12 @@ class NormalizationModule(SingleMethodModule):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent, **kwargs)
         self.__snowball_lang = self.DEFAULT_LANGUAGE
-        self.__udpipe_lang = self.DEFAULT_LANGUAGE
         self.__use_tokenizer = self.DEFAULT_USE_TOKE
 
         self.__combo_sbl = ComboBox(
             self, SnowballStemmer.supported_languages,
             self.__snowball_lang, self.__set_snowball_lang
         )
-        self.__combo_udl = UDPipeComboBox(
-            self, self.__udpipe_lang, self.DEFAULT_LANGUAGE,
-            self.__set_udpipe_lang
-        )
-        self.__check_use = QCheckBox("UDPipe tokenizer",
-                                     checked=self.DEFAULT_USE_TOKE)
-        self.__check_use.clicked.connect(self.__set_use_tokenizer)
 
         label = QLabel("Language:")
         label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -418,33 +378,12 @@ class NormalizationModule(SingleMethodModule):
 
         label = QLabel("Language:")
         label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.layout().addWidget(label, self.UDPipe, 1)
-        self.layout().addWidget(self.__combo_udl, self.UDPipe, 2)
-
-        self.layout().addWidget(self.__check_use, self.UDPipe, 3)
-        self.layout().setColumnStretch(2, 1)
-        self.__enable_udpipe()
-
-    def __enable_udpipe(self):
-        enable = bool(self.__combo_udl.items)
-        layout = self.layout()  # type: QGridLayout
-        for i in range(4):
-            layout.itemAtPosition(self.UDPipe, i).widget().setEnabled(enable)
-        if self.method == self.UDPipe and not enable:
-            self._set_method(self.Porter)
 
     def setParameters(self, params: Dict):
         super().setParameters(params)
         snowball_lang = params.get("snowball_language", self.DEFAULT_LANGUAGE)
         self.__set_snowball_lang(snowball_lang)
-        udpipe_lang = params.get("udpipe_language", self.DEFAULT_LANGUAGE)
-        self.__set_udpipe_lang(udpipe_lang)
-        use_tokenizer = params.get("udpipe_tokenizer", self.DEFAULT_USE_TOKE)
-        self.__set_use_tokenizer(use_tokenizer)
 
-    def _set_method(self, method: int):
-        super()._set_method(method)
-        self.__enable_udpipe()
 
     def __set_snowball_lang(self, language: str):
         if self.__snowball_lang != language:
@@ -454,27 +393,17 @@ class NormalizationModule(SingleMethodModule):
             if self.method == self.Snowball:
                 self.edited.emit()
 
-    def __set_udpipe_lang(self, language: str):
-        if self.__udpipe_lang != language:
-            self.__udpipe_lang = language
-            self.__combo_udl.setCurrentText(language)
-            self.changed.emit()
-            if self.method == self.UDPipe:
-                self.edited.emit()
 
     def __set_use_tokenizer(self, use: bool):
         if self.__use_tokenizer != use:
             self.__use_tokenizer = use
             self.__check_use.setChecked(use)
             self.changed.emit()
-            if self.method == self.UDPipe:
-                self.edited.emit()
+
 
     def parameters(self) -> Dict:
         params = super().parameters()
-        params.update({"snowball_language": self.__snowball_lang,
-                       "udpipe_language": self.__udpipe_lang,
-                       "udpipe_tokenizer": self.__use_tokenizer})
+        params.update({"snowball_language": self.__snowball_lang})
         return params
 
     @staticmethod
@@ -484,19 +413,12 @@ class NormalizationModule(SingleMethodModule):
         def_lang = NormalizationModule.DEFAULT_LANGUAGE
         if method == NormalizationModule.Snowball:
             args = {"language": params.get("snowball_language", def_lang)}
-        elif method == NormalizationModule.UDPipe:
-            def_use = NormalizationModule.DEFAULT_USE_TOKE
-            args = {"language": params.get("udpipe_language", def_lang),
-                    "use_tokenizer": params.get("udpipe_tokenizer", def_use)}
         return NormalizationModule.Methods[method](**args)
 
     def __repr__(self):
         text = super().__repr__()
         if self.method == self.Snowball:
             text = f"{text} ({self.__snowball_lang})"
-        elif self.method == self.UDPipe:
-            text = f"{text} ({self.__udpipe_lang}, " \
-                   f"Tokenize: {['No', 'Yes'][self.__use_tokenizer]})"
         return text
 
 
@@ -550,8 +472,8 @@ class FilteringModule(MultipleMethodModule):
         self.__edit = ValidatedLineEdit(self.__pattern, validator)
         self.__edit.editingFinished.connect(self.__edit_finished)
 
-        rel_freq_rb = QRadioButton("Relative:")
-        abs_freq_rb = QRadioButton("Absolute:")
+        rel_freq_rb = QRadioButton("相对:")
+        abs_freq_rb = QRadioButton("绝对:")
         self.__freq_group = group = QButtonGroup(self, exclusive=True)
         group.addButton(rel_freq_rb, 0)
         group.addButton(abs_freq_rb, 1)
@@ -823,7 +745,7 @@ class NgramsModule(PreprocessorModule):
         self.__range_spins = RangeSpins(
             self.__start, 1, self.__end, self.MIN, self.MAX,
             self.__set_start, self.__set_end, self.edited)
-        self.layout().addRow("Range:", self.__range_spins)
+        self.layout().addRow("范围:", self.__range_spins)
 
     def setParameters(self, params: Dict):
         self.__set_range(params.get("start", self.DEFAULT_START),
@@ -871,32 +793,32 @@ class POSTaggingModule(SingleMethodModule):
 PREPROCESS_ACTIONS = [
     PreprocessAction(
         "Transformation", "preprocess.transform", "",
-        Description("Transformation", icon_path("Transform.svg")),
+        Description("变换", icon_path("Transform.svg")),
         TransformationModule
     ),
     PreprocessAction(
         "Tokenization", "preprocess.tokenize", "",
-        Description("Tokenization", icon_path("Tokenize.svg")),
+        Description("分词", icon_path("Tokenize.svg")),
         TokenizerModule
     ),
     PreprocessAction(
         "Normalization", "preprocess.normalize", "",
-        Description("Normalization", icon_path("Normalize.svg")),
+        Description("归一化", icon_path("Normalize.svg")),
         NormalizationModule
     ),
     PreprocessAction(
         "Filtering", "preprocess.filter", "",
-        Description("Filtering", icon_path("Filter.svg")),
+        Description("过滤", icon_path("Filter.svg")),
         FilteringModule
     ),
     PreprocessAction(
         "N-grams Range", "preprocess.ngrams", "",
-        Description("N-grams Range", icon_path("NGrams.svg")),
+        Description("N-grams 范围", icon_path("NGrams.svg")),
         NgramsModule
     ),
     PreprocessAction(
         "POS Tagger", "tag.pos", "",
-        Description("POS Tagger", icon_path("POSTag.svg")),
+        Description("POS 标记", icon_path("POSTag.svg")),
         POSTaggingModule
     )
 ]
@@ -904,11 +826,12 @@ PREPROCESS_ACTIONS = [
 
 class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
                    ConcurrentWidgetMixin):
-    name = "Preprocess Text"
-    description = "Construct a text pre-processing pipeline."
+    name = "文本预处理(Preprocess Text)"
+    description = "构建文本预处理流水线。"
     icon = "icons/TextPreprocess.svg"
     priority = 200
-    keywords = []
+    keywords = ['yuchuli', 'wenbenyuchuli']
+    category = 'text'
 
     settings_version = 3
 
@@ -920,7 +843,6 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
 
     class Error(Orange.widgets.data.owpreprocess.OWPreprocess.Error):
         unknown_error = Msg("{}")
-        udpipe_offline_no_models = Msg("No UDPipe model is selected.")
         file_not_found = Msg("File not found.")
         invalid_encoding = Msg("Invalid file encoding. Please save the "
                                "file as UTF-8 and try again.")
@@ -928,17 +850,8 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
 
     class Warning(Orange.widgets.data.owpreprocess.OWPreprocess.Warning):
         no_token_left = Msg("No tokens on the output.")
-        udpipe_offline = Msg("No internet connection. UDPipe"
-                             " works with local models.")
-        udpipe_offline_no_models = Msg("No internet connection. "
-                                       "UDPipe model is not available.")
-        tokenizer_propagated = Msg("Tokenization should be placed before "
-                                   "Normalization, Filtering, n-grams and "
-                                   "POS Tagger.")
-        tokenizer_ignored = Msg("Tokenization has been ignored due to "
-                                "UDPipe tokenizer.")
-        filtering_ignored = Msg("Filtering has been ignored due to "
-                                "UDPipe tokenizer.")
+        tokenizer_propagated = Msg(
+            "分词 应该放在 归一化、过滤、n-grams和POS 标记之前。")
 
     UserAdviceMessages = [
         Message(f"Some preprocessing methods require data (like word "
@@ -956,7 +869,7 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
     def __init__(self):
         ConcurrentWidgetMixin.__init__(self)
         Orange.widgets.data.owpreprocess.OWPreprocess.__init__(self)
-        box = gui.vBox(self.controlArea, "Preview")
+        box = gui.vBox(self.controlArea, "预览")
         self.preview = ""
         gui.label(box, self, "%(preview)s", wordWrap=True)
         self.controlArea.layout().insertWidget(1, box)
@@ -1018,17 +931,6 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
         if isinstance(preprocessors, BaseTokenizer):
             if any(isinstance(pp, TokenizedPreprocessor) for pp in plist):
                 self.Warning.tokenizer_propagated()
-        elif isinstance(preprocessors, UDPipeLemmatizer):
-            if not preprocessors.models.online:
-                if not preprocessors.models.model_files:
-                    self.Warning.udpipe_offline_no_models()
-                else:
-                    self.Warning.udpipe_offline()
-            if preprocessors.use_tokenizer:
-                if any(isinstance(pp, BaseTokenizer) for pp in plist):
-                    self.Warning.tokenizer_ignored()
-                if any(isinstance(pp, BaseTokenFilter) for pp in plist):
-                    self.Warning.filtering_ignored()
 
     def apply(self):
         self.storeSpecificSettings()
@@ -1083,10 +985,7 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
         self.update_preview(data)
 
     def on_exception(self, ex: Exception):
-        if isinstance(ex, UDPipeStopIteration):
-            self.Error.udpipe_offline_no_models()
-        else:
-            self.Error.unknown_error(ex)
+        self.Error.unknown_error(ex)
 
     def update_preview(self, data):
         if data:
@@ -1148,8 +1047,6 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
                     params = {
                         "method": normalizer["method_index"],
                         "snowball_language": normalizer["snowball_language"],
-                        "udpipe_language": normalizer["udpipe_language"],
-                        "udpipe_tokenizer": normalizer["udpipe_tokenizer"]
                     }
                     preprocessors.append(("preprocess.normalize", params))
 

@@ -19,6 +19,8 @@ class OWDuplicates(widget.OWWidget):
     description = '侦查并删除重复内容'
     icon = 'icons/Duplicates.svg'
     priority = 700
+    keywords = ['chachong', 'chongfu']
+    category = 'text'
 
     class Inputs:
         distances = Input("距离(Distances)", DistMatrix, replaces=['Distances'])
@@ -35,7 +37,8 @@ class OWDuplicates(widget.OWWidget):
                                         'distances calculated between rows.')
         too_little_documents = Msg('More than one document is required.')
 
-    LINKAGE = ['单一的(Single)', '平均(Average)', '完全(Complete)', '加权(Weighted)', 'Ward']
+    LINKAGE = ['Single', 'Average', 'Complete', 'Weighted)', 'Ward']
+    # LINKAGE = ['单一的(Single)', '平均(Average)', '完全(Complete)', '加权(Weighted)', 'Ward']
     linkage_method = settings.Setting(1)
 
     threshold = settings.Setting(.0)

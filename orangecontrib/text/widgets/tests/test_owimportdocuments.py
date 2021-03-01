@@ -63,7 +63,7 @@ class TestOWImportDocuments(WidgetTest):
         """
         self.assertTrue(self.widget.Warning.read_error.is_shown())
         self.assertEqual(
-            "One file couldn't be read.",
+            "无法读取 One file.",
             str(self.widget.Warning.read_error),
         )
 
@@ -78,7 +78,7 @@ class TestOWImportDocuments(WidgetTest):
         # empty widget
         self.widget: OWImportDocuments = self.create_widget(OWImportDocuments)
         self.assertEqual(
-            "No document set selected", self.widget.info_area.text()
+            "没有选中文档", self.widget.info_area.text()
         )
 
 

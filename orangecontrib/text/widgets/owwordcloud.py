@@ -105,13 +105,15 @@ class OWWordCloud(OWWidget, ConcurrentWidgetMixin):
     name = "词云(Word Cloud)"
     priority = 510
     icon = "icons/WordCloud.svg"
+    keywords = ['ciyun', 'yun']
+    category = 'text'
 
     class Inputs:
         corpus = Input("语料库(Corpus)", Corpus, default=True, replaces=['Corpus'])
         topic = Input("主题(Topic)", Topic, replaces=['Topic'])
 
     class Outputs:
-        corpus = Output(" 语料库(Corpus)", Corpus, replaces=['Corpus'])
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
         selected_words = Output("选中的词(Selected Words)", Topic, dynamic=False, replaces=['Selected Words'])
         word_counts = Output("词频(Word Counts)", Table, replaces=['Word Counts'])
 

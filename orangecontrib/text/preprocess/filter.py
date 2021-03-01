@@ -1,6 +1,7 @@
 from typing import List, Callable
 import os
 import re
+from pathlib import Path
 
 from gensim import corpora
 from nltk.corpus import stopwords
@@ -63,9 +64,19 @@ class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
     def __init__(self, language='English', path: str = None):
         super().__init__()
         FileWordListMixin.__init__(self, path)
-        self.__stopwords = set(x.strip() for x in
-                               stopwords.words(language.lower())) \
-            if language else []
+        if not language:
+            self.__stopwords = []
+        if language != '中文':
+            self.__stopwords = set(x.strip() for x in
+                                   stopwords.words(language.lower())) 
+        elif language == '中文':
+            dir_path = Path(__file__).resolve()
+            parent_path = dir_path.parent.parent
+            chinese_stop_words_path = f'{str(parent_path)}/chinese_stop_words'
+
+            self.__stopwords = set([line.strip()
+                                  for line in open(f'{str(chinese_stop_words_path)}/cn',
+                                                   'r', encoding='utf-8').readlines()])
 
     @staticmethod
     @wait_nltk_data
@@ -79,9 +90,9 @@ class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
         except LookupError:  # when no NLTK data is available
             pass
 
-        all_stopwords_listdir = ['中文停用词表', '哈工大停用词表', '百度停用词表', '四川大学停用词库'] + \
-                                sorted(file.capitalize() for file in stopwords_listdir)
-
+        # return sorted(file.capitalize() for file in stopwords_listdir)
+        all_stopwords_listdir = ['中文'] + \
+            sorted(file.capitalize() for file in stopwords_listdir)
         return all_stopwords_listdir
 
     def _check(self, token):
@@ -186,8 +197,8 @@ class FrequencyFilter(FitDictionaryFilter):
 
 
 class MostFrequentTokensFilter(FitDictionaryFilter):
-    """Keep most frequent tokens."""
-    name = 'Most frequent tokens'
+    """只保留最常见词"""
+    name = '最常见词'
 
     def __init__(self, keep_n=None):
         super().__init__()

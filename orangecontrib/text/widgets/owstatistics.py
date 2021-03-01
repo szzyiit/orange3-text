@@ -358,24 +358,24 @@ class ComputeValue:
 STATISTICS = [
     # (name of the statistics, function to compute, default value)
     # if default value is None - text box is not required
-    ("Word count", words_count, None),
-    ("Character count", characters_count, None),
-    ("N-gram count", n_gram_count, None),
-    ("Average word length", average_word_len, None),
-    ("Punctuation count", punctuation_count, None),
-    ("Capital letter count", capital_count, None),
-    ("Vowel count", vowel_count, "a,e,i,o,u"),
+    ("词数量", words_count, None),
+    ("字母数量", characters_count, None),
+    ("N-gram 数量", n_gram_count, None),
+    ("平均词长", average_word_len, None),
+    ("标点数量", punctuation_count, None),
+    ("大写字母数量", capital_count, None),
+    ("元音数量", vowel_count, "a,e,i,o,u"),
     (
-        "Consonant count",
+        "辅音数量",
         consonant_count,
         "b,c,d,f,g,h,j,k,l,m,n,p,q,r,s,t,v,w,x,y,z",
     ),
-    ("Per cent unique words", per_cent_unique_words, None),
-    ("Starts with", starts_with, ""),
-    ("Ends with", ends_with, ""),
-    ("Contains", contains, ""),
-    ("Regex", regex, ""),
-    ("POS tag", pos_tags, "NN,VV,JJ"),
+    ("单个词占比", per_cent_unique_words, None),
+    ("以...开头", starts_with, ""),
+    ("以...结尾", ends_with, ""),
+    ("包含", contains, ""),
+    ("正则表达式", regex, ""),
+    ("POS 标记", pos_tags, "NN,VV,JJ"),
 ]
 STATISTICS_NAMES = list(list(zip(*STATISTICS))[0])
 STATISTICS_FUNCTIONS = list(list(zip(*STATISTICS))[1])
@@ -412,16 +412,18 @@ def run(corpus: Corpus, statistics: Tuple[int, str], state: TaskState) -> None:
 
 
 class OWStatistics(OWWidget, ConcurrentWidgetMixin):
-    name = "Statistics"
-    description = "Create new statistic variables for documents."
-    keywords = []
+    name = "文档统计(Statistics)"
+    description = "为文件创建新的统计变量。"
+    keywords = ['tongji', 'wendangtongji']
+    category = 'text'
     icon = "icons/Statistics.svg"
+    
 
     class Inputs:
-        corpus = Input("Corpus", Corpus)
+        corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Outputs:
-        corpus = Output("Corpus", Corpus)
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     class Warning(OWWidget.Warning):
         not_computed = Msg(
@@ -461,7 +463,7 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         gui.button(
             box,
             self,
-            "Apply",
+            "应用",
             autoDefault=False,
             width=180,
             callback=self.apply,
@@ -491,8 +493,8 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         self.rules_box.setColumnStretch(0, 1)
         self.rules_box.setColumnStretch(1, 1)
         self.rules_box.setColumnStretch(2, 100)
-        rules_box.addWidget(QLabel("Feature"), 0, 1)
-        rules_box.addWidget(QLabel("Pattern"), 0, 2)
+        rules_box.addWidget(QLabel("特征"), 0, 1)
+        rules_box.addWidget(QLabel("模式"), 0, 2)
         self.adjust_n_rule_rows()
 
     def adjust_n_rule_rows(self) -> None:

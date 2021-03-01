@@ -154,10 +154,10 @@ class TestConcordanceWidget(WidgetTest):
 
     def test_set_corpus(self):
         self.widget.model.set_corpus = set_corpus = Mock()
-        self.send_signal("Corpus", self.corpus)
+        self.send_signal("语料库(Corpus)", self.corpus)
         set_corpus.assert_called_with(self.corpus)
 
-        self.send_signal("Corpus", None)
+        self.send_signal("语料库(Corpus)", None)
         set_corpus.assert_called_with(None)
 
     def test_set_word(self):
@@ -173,7 +173,7 @@ class TestConcordanceWidget(WidgetTest):
         set_width.assert_called_with(4)
 
     def test_selection(self):
-        self.send_signal("Corpus", self.corpus)
+        self.send_signal("语料库(Corpus)", self.corpus)
         widget = self.widget
         widget.controls.word.setText("of")
         view = self.widget.conc_view
@@ -182,14 +182,14 @@ class TestConcordanceWidget(WidgetTest):
         view.selectRow(1)
         self.assertEqual({ind.row() for ind in view.selectedIndexes()},
                          {0, 1})
-        self.assertEqual(self.get_output("Selected Documents"),
+        self.assertEqual(self.get_output("选中的文档(Selected Documents)"),
                          self.corpus[[1]])
 
         # Select a single row
         view.selectRow(3)
         self.assertEqual({ind.row() for ind in view.selectedIndexes()},
                          {3})
-        self.assertEqual(self.get_output("Selected Documents"),
+        self.assertEqual(self.get_output("选中的文档(Selected Documents)"),
                          self.corpus[[4]])
 
         # Add a "double" row, three are selected, two documents on the output
@@ -200,13 +200,13 @@ class TestConcordanceWidget(WidgetTest):
         selection_model.select(selection, selection_model.Select)
         self.assertEqual({ind.row() for ind in view.selectedIndexes()},
                          {0, 1, 3})
-        self.assertEqual(self.get_output("Selected Documents"),
+        self.assertEqual(self.get_output("选中的文档(Selected Documents)"),
                          self.corpus[[1, 4]])
 
         # Clear selection by clicking outside
         ind_10 = widget.model.index(-1, 0)
         selection_model.select(ind_10, selection_model.Select)
-        self.assertIsNone(self.get_output("Selected Documents"))
+        self.assertIsNone(self.get_output("选中的文档(Selected Documents)"))
 
         # Selected rows emptied after word change
         view.selectRow(3)
@@ -215,19 +215,19 @@ class TestConcordanceWidget(WidgetTest):
         self.assertFalse(view.selectedIndexes())
 
     def test_signal_to_none(self):
-        self.send_signal("Corpus", self.corpus)
+        self.send_signal("语料库(Corpus)", self.corpus)
         widget = self.widget
         widget.controls.word.setText("of")
         view = self.widget.conc_view
         nrows = widget.model.rowCount()
         view.selectRow(1)
 
-        self.send_signal("Corpus", None)
-        self.assertIsNone(self.get_output("Selected Documents"))
+        self.send_signal("语料库(Corpus)", None)
+        self.assertIsNone(self.get_output("选中的文档(Selected Documents)"))
         self.assertEqual(widget.model.rowCount(), 0)
         self.assertEqual(widget.controls.word.text(), "")
 
-        self.send_signal("Corpus", self.corpus)
+        self.send_signal("语料库(Corpus)", self.corpus)
         self.assertEqual(widget.model.rowCount(), nrows)
 
 

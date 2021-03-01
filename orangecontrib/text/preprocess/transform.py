@@ -50,7 +50,7 @@ class HtmlTransformer(BaseTransformer):
 
 class UrlRemover(BaseTransformer):
     """ 去除超链接. """
-    name = "去除 urls""
+    name = "去除 urls"
     urlfinder = None
 
     def __call__(self, corpus: Corpus, callback: Callable = None) -> Corpus:

@@ -38,7 +38,8 @@ class OWDocMap(widget.OWWidget):
     priority = 530
     icon = "icons/DocMap.svg"
     replaces = ["orangecontrib.text.widgets.owgeomap.OWGeoMap"]
-    keywords = ["GeoMap"]
+    keywords = ["GeoMap", 'wendangditu', 'ditu']
+    category = 'text'
 
     class Inputs:
         data = Input('数据(Data)', Table, replaces=['Data'])

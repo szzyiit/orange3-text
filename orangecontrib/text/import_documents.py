@@ -27,7 +27,7 @@ from Orange.util import Registry
 from orangecontrib.text.corpus import Corpus
 
 
-DefaultFormats = ("docx", "odt", "txt", "pdf", "xml", "js", 'css', 'html', 'java', 'py')
+DefaultFormats = ("docx", "odt", "txt", "pdf", "xml")
 
 TextData = namedtuple(
     "Text",

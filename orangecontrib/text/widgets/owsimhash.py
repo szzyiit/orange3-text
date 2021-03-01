@@ -12,7 +12,8 @@ class OWSimhash(owbasevectorizer.OWBaseVectorizer):
     description = '计算文档哈希值.'
     icon = 'icons/Simhash.svg'
     priority = 310
-    keywords = ["SimHash"]
+    keywords = ["SimHash", 'haxi', 'xiangsi']
+    category = 'text'
 
     Method = SimhashVectorizer
 

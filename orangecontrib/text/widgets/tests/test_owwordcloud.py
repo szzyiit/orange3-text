@@ -14,7 +14,7 @@ from orangecontrib.text.widgets.owwordcloud import OWWordCloud
 
 
 @unittest.skipIf(
-    pkg_resources.get_distribution("orange3").version < "3.24.0",
+    pkg_resources.get_distribution("orange3-zh").version < "3.24.0",
     "Wait until finished not implemented in lower version"
 )
 class TestWordCloudWidget(WidgetTest):
