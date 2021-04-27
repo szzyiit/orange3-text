@@ -919,6 +919,9 @@ class OWPreprocess(Orange.widgets.data.owpreprocess.OWPreprocess,
             desc = item.data(DescriptionRole)
             params = item.data(ParametersRole)
             assert isinstance(params, dict)
+            # TODO: 不知道为啥会有这个问题
+            if 'language' in params and params['language']  == '百度停用词表':
+                continue
 
             inst = desc.viewclass.createinstance(params)
             self._check_preprocessors(inst, plist)

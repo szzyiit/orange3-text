@@ -2,7 +2,6 @@ from typing import List, Callable
 import re
 from nltk import tokenize
 import jieba
-import pkuseg
 
 from Orange.util import wrap_callback, dummy_callback
 
