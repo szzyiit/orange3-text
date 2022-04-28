@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch, Mock
 
 from Orange.widgets.tests.base import WidgetTest
 from orangecontrib.text.widgets.owimportdocuments import OWImportDocuments
@@ -63,12 +64,37 @@ class TestOWImportDocuments(WidgetTest):
         """
         self.assertTrue(self.widget.Warning.read_error.is_shown())
         self.assertEqual(
-            "无法读取 One file.",
+            "One file couldn't be read.",
             str(self.widget.Warning.read_error),
         )
 
     def test_send_report(self):
         self.widget.send_report()
+
+    def test_conllu_cb(self):
+        path = os.path.join(os.path.dirname(__file__), "data/conllu")
+        self.widget.setCurrentPath(path)
+        self.widget.reload()
+        self.wait_until_finished()
+        # default has only lemmas
+        corpus = self.get_output(self.widget.Outputs.data)
+        self.assertTrue(corpus.has_tokens())
+        # check pos tags are on the output
+        self.widget.controls.pos_cb.setChecked(True)
+        corpus = self.get_output(self.widget.Outputs.data)
+        self.assertTrue(len(corpus.pos_tags))
+        # check named entities are on the output
+        self.widget.controls.ner_cb.setChecked(True)
+        corpus = self.get_output(self.widget.Outputs.data)
+        self.assertEqual(len(corpus.domain.metas), 5)
+        # check only corpus is on the output when all boxes unchecked
+        self.widget.controls.lemma_cb.setChecked(False)
+        self.widget.controls.pos_cb.setChecked(False)
+        self.widget.controls.ner_cb.setChecked(False)
+        corpus = self.get_output(self.widget.Outputs.data)
+        self.assertFalse(corpus.has_tokens())
+        self.assertIsNone(corpus.pos_tags)
+        self.assertEqual(len(corpus.domain.metas), 4)
 
     def test_info_box(self):
         self.assertEqual(
@@ -78,8 +104,18 @@ class TestOWImportDocuments(WidgetTest):
         # empty widget
         self.widget: OWImportDocuments = self.create_widget(OWImportDocuments)
         self.assertEqual(
-            "没有选中文档", self.widget.info_area.text()
+            "No document set selected", self.widget.info_area.text()
         )
+
+    @patch("orangecontrib.text.import_documents.ImportDocuments.scan",
+           Mock(return_value=[]))
+    def test_load_empty_folder(self):
+        widget = self.create_widget(OWImportDocuments)
+        path = os.path.join(os.path.dirname(__file__), "data/documents")
+        widget.setCurrentPath(path)
+        widget.reload()
+        self.wait_until_finished(widget=widget)
+        self.assertIsNone(self.get_output(widget.Outputs.data))
 
 
 if __name__ == "__main__":

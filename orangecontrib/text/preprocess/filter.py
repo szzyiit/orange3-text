@@ -1,8 +1,11 @@
+from itertools import compress
 from typing import List, Callable
 import os
 import re
 from pathlib import Path
 
+
+import numpy as np
 from gensim import corpora
 from nltk.corpus import stopwords
 
@@ -14,7 +17,8 @@ from orangecontrib.text.misc import wait_nltk_data
 from orangecontrib.text.preprocess import TokenizedPreprocessor
 
 __all__ = ['BaseTokenFilter', 'StopwordsFilter', 'LexiconFilter',
-           'RegexpFilter', 'FrequencyFilter', 'MostFrequentTokensFilter']
+           'RegexpFilter', 'FrequencyFilter', 'MostFrequentTokensFilter',
+           'PosTagFilter', 'NumbersFilter', 'WithNumbersFilter']
 
 
 class BaseTokenFilter(TokenizedPreprocessor):
@@ -24,14 +28,27 @@ class BaseTokenFilter(TokenizedPreprocessor):
         corpus = super().__call__(corpus, wrap_callback(callback, end=0.2))
         return self._filter_tokens(corpus, wrap_callback(callback, start=0.2))
 
-    def _filter_tokens(self, corpus: Corpus, callback: Callable) -> Corpus:
+    def _filter_tokens(self, corpus: Corpus, callback: Callable,
+                       dictionary=None) -> Corpus:
         callback(0, "Filtering...")
-        tokens = [self._preprocess(tokens) for tokens in corpus.tokens]
-        corpus.store_tokens(tokens)
+        filtered_tokens = []
+        filtered_tags = []
+        for i, tokens in enumerate(corpus.tokens):
+            filter_map = self._preprocess(tokens)
+            filtered_tokens.append(list(compress(tokens, filter_map)))
+            if corpus.pos_tags is not None:
+                filtered_tags.append(list(compress(corpus.pos_tags[i],
+                                                   filter_map)))
+        if dictionary is None:
+            corpus.store_tokens(filtered_tokens)
+        else:
+            corpus.store_tokens(filtered_tokens, dictionary)
+        if filtered_tags:
+            corpus.pos_tags = np.array(filtered_tags, dtype=object)
         return corpus
 
     def _preprocess(self, tokens: List) -> List:
-        return list(filter(self._check, tokens))
+        return [self._check(token) for token in tokens]
 
     def _check(self, token: str) -> bool:
         raise NotImplementedError
@@ -44,7 +61,7 @@ class FileWordListMixin:
     @staticmethod
     def from_file(path):
         if not path:
-            return []
+            return set()
 
         for encoding in ('utf-8', None, detect_encoding(path)):
             try:
@@ -64,6 +81,7 @@ class StopwordsFilter(BaseTokenFilter, FileWordListMixin):
     def __init__(self, language='English', path: str = None):
         super().__init__()
         FileWordListMixin.__init__(self, path)
+
         if not language:
             self.__stopwords = []
         if language != '中文':
@@ -136,6 +154,29 @@ class RegexpFilter(BaseTokenFilter):
         return not self.regex.match(token)
 
 
+class NumbersFilter(BaseTokenFilter):
+    """ 删除数字. """
+    name = '数字'
+
+    def _check(self, token):
+        try:
+            float(token)
+            return False
+        except ValueError:
+            return True
+
+
+class WithNumbersFilter(RegexpFilter):
+    """ 删除包含数字的词 """
+    name = '包含数字'
+
+    def __init__(self):
+        super().__init__(r'[0-9]')
+
+    def _check(self, token):
+        return not self.regex.findall(token)
+
+
 class FitDictionaryFilter(BaseTokenFilter):
     def __init__(self):
         self._lexicon = None
@@ -153,10 +194,10 @@ class FitDictionaryFilter(BaseTokenFilter):
     def _fit(self, corpus: Corpus):
         raise NotImplemented
 
-    def _filter_tokens(self, corpus: Corpus, callback: Callable) -> Corpus:
-        callback(0, "Filtering...")
-        tokens = [self._preprocess(tokens) for tokens in corpus.tokens]
-        corpus.store_tokens(tokens, self._dictionary)
+    def _filter_tokens(self, corpus: Corpus, callback: Callable,
+                       dictionary=None) -> Corpus:
+        corpus = super()._filter_tokens(corpus, callback,
+                                        dictionary=self._dictionary)
         return corpus
 
     def _check(self, token):
@@ -166,8 +207,9 @@ class FitDictionaryFilter(BaseTokenFilter):
 
 
 class FrequencyFilter(FitDictionaryFilter):
-    """移除文档频率超出此范围的标记。使用绝对或相对频率。 """
-    name = '文档频率'
+    """Remove tokens with document frequency outside this range;
+    use either absolute or relative frequency. """
+    name = 'Document frequency'
 
     def __init__(self, min_df=0., max_df=1.):
         super().__init__()
@@ -179,7 +221,7 @@ class FrequencyFilter(FitDictionaryFilter):
         self._corpus_len = len(corpus)
         self._dictionary = corpora.Dictionary(corpus.tokens)
         self._dictionary.filter_extremes(self.min_df, self.max_df, None)
-        self._lexicon = list(self._dictionary.token2id.keys())
+        self._lexicon = set(self._dictionary.token2id.keys())
 
     @property
     def max_df(self):
@@ -207,4 +249,41 @@ class MostFrequentTokensFilter(FitDictionaryFilter):
     def _fit(self, corpus: Corpus):
         self._dictionary = corpora.Dictionary(corpus.tokens)
         self._dictionary.filter_extremes(0, 1, self._keep_n)
-        self._lexicon = list(self._dictionary.token2id.keys())
+        self._lexicon = set(self._dictionary.token2id.keys())
+
+
+class PosTagFilter(BaseTokenFilter):
+    """Keep selected POS tags."""
+    name = 'POS tags'
+
+    def __init__(self, tags=None):
+        self._tags = set(i.strip().upper() for i in tags.split(","))
+
+    @staticmethod
+    def validate_tags(tags):
+        # should we keep a dict of existing POS tags and compare them with
+        # input?
+        return len(tags.split(",")) > 0
+
+    def _filter_tokens(self, corpus: Corpus, callback: Callable) -> Corpus:
+        if corpus.pos_tags is None:
+            return corpus
+        callback(0, "Filtering...")
+        filtered_tags = []
+        filtered_tokens = []
+        for tags, tokens in zip(corpus.pos_tags, corpus.tokens):
+            tmp_tags = []
+            tmp_tokens = []
+            for tag, token in zip(tags, tokens):
+                # should we consider partial matches, i.e. "NN" for "NNS"?
+                if tag in self._tags:
+                    tmp_tags.append(tag)
+                    tmp_tokens.append(token)
+            filtered_tags.append(tmp_tags)
+            filtered_tokens.append(tmp_tokens)
+        corpus.store_tokens(filtered_tokens)
+        corpus.pos_tags = filtered_tags
+        return corpus
+
+    def _check(self, token: str) -> bool:
+        pass

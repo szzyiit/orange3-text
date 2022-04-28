@@ -1,5 +1,7 @@
 import unittest
 
+from numpy.testing import assert_allclose
+
 from orangecontrib.text.corpus import Corpus
 from orangecontrib.text.sentiment import LiuHuSentiment, VaderSentiment, \
     MultiSentiment, SentiArt
@@ -14,8 +16,8 @@ class LiuHuTest(unittest.TestCase):
     def test_transform(self):
         sentiment = self.method.transform(self.corpus)
         self.assertIsInstance(sentiment, Corpus)
-        self.assertEqual(len(sentiment.domain),
-                         len(self.corpus.domain) + self.new_cols)
+        self.assertEqual(len(sentiment.domain.variables),
+                         len(self.corpus.domain.variables) + self.new_cols)
 
     def test_copy(self):
         sentiment_t = self.method.transform(self.corpus)
@@ -43,8 +45,8 @@ class LiuHuTest(unittest.TestCase):
     def test_empty_corpus(self):
         corpus = Corpus.from_file('deerwester')[:0]
         sentiment = self.method.transform(corpus)
-        self.assertEqual(len(sentiment.domain),
-                         len(self.corpus.domain) + self.new_cols)
+        self.assertEqual(len(sentiment.domain.variables),
+                         len(self.corpus.domain.variables) + self.new_cols)
         self.assertEqual(len(sentiment), 0)
 
 
@@ -57,8 +59,8 @@ class LiuHuSlovenian(unittest.TestCase):
     def test_transform(self):
         sentiment = self.method.transform(self.corpus)
         self.assertIsInstance(sentiment, Corpus)
-        self.assertEqual(len(sentiment.domain),
-                         len(self.corpus.domain) + self.new_cols)
+        self.assertEqual(len(sentiment.domain.variables),
+                         len(self.corpus.domain.variables) + self.new_cols)
 
     def test_copy(self):
         sentiment_t = self.method.transform(self.corpus)
@@ -74,8 +76,8 @@ class LiuHuSlovenian(unittest.TestCase):
     def test_empty_corpus(self):
         corpus = self.corpus[:0]
         sentiment = self.method.transform(corpus)
-        self.assertEqual(len(sentiment.domain),
-                         len(self.corpus.domain) + self.new_cols)
+        self.assertEqual(len(sentiment.domain.variables),
+                         len(self.corpus.domain.variables) + self.new_cols)
         self.assertEqual(len(sentiment), 0)
 
 
@@ -96,8 +98,14 @@ class MultiSentimentTest(LiuHuTest):
 class SentiArtTest(LiuHuTest):
     def setUp(self):
         self.corpus = Corpus.from_file('deerwester')
+        self.slo_corpus = Corpus.from_file('slo-opinion-corpus')[83:85]
         self.method = SentiArt()
         self.new_cols = 7
+
+    def test_empty_slice_mean(self):
+        # this should execute without raising an exception
+        result = self.method.transform(self.slo_corpus)
+        assert_allclose(result.X[0, -self.new_cols:], 0)
 
 
 if __name__ == "__main__":

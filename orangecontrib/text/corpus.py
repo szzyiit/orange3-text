@@ -1,9 +1,11 @@
 import os
 from collections import Counter, defaultdict
+from contextlib import contextmanager
 from copy import copy
 from numbers import Integral
 from itertools import chain
 from typing import Union, Optional, List, Tuple
+from warnings import warn
 
 import nltk
 import numpy as np
@@ -18,13 +20,19 @@ from Orange.data import (
     RowInstance,
     Table,
     StringVariable,
+    dataset_dirs,
 )
 from Orange.preprocess.transformation import Identity
-# uncomment when Orange3==3.27 is available
-# from Orange.data.util import get_unique_names
-# remove when Orange3==3.27 is available
-from orangecontrib.text.vectorization.base import get_unique_names
+from Orange.data.util import get_unique_names
 from orangecontrib.text.vectorization import BowVectorizer
+
+try:
+    from orangewidget.utils.signals import summarize, PartialSummary
+    # import to check if Table summary is available - if summarize_by_name does
+    # not exist Orange (3.28) does not support automated summaries
+    from Orange.widgets.utils.state_summary import summarize_by_name
+except ImportError:
+    summarize, PartialSummary = None, None
 
 
 def get_sample_corpora_dir():
@@ -65,12 +73,14 @@ class Corpus(Table):
                 text mining. Infer them if None.
             ids (numpy.ndarray): Indices
         """
+        super().__init__()
         n_doc = _check_arrays(X, Y, metas)
 
-        self.X = X if X is not None else np.zeros((n_doc, 0))
-        self.Y = Y if Y is not None else np.zeros((n_doc, 0))
-        self.metas = metas if metas is not None else np.zeros((n_doc, 0))
-        self.W = W if W is not None else np.zeros((n_doc, 0))
+        with self.unlocked_reference():
+            self.X = X if X is not None else np.zeros((n_doc, 0))
+            self.Y = Y if Y is not None else np.zeros((n_doc, 0))
+            self.metas = metas if metas is not None else np.zeros((n_doc, 0))
+            self.W = W if W is not None else np.zeros((n_doc, 0))
         self.domain = domain
         self.text_features = []    # list of text features for mining
         self._tokens = None
@@ -78,7 +88,7 @@ class Corpus(Table):
         self._ngrams_corpus = None
         self.ngram_range = (1, 1)
         self.attributes = {}
-        self.pos_tags = None
+        self._pos_tags = None
         from orangecontrib.text.preprocess import PreprocessorList
         self.__used_preprocessor = PreprocessorList([])   # required for compute values
         self._titles: Optional[np.ndarray] = None
@@ -235,38 +245,15 @@ class Corpus(Table):
             if attr.is_string:
                 if first is None:
                     first = attr
-                if attr.attributes.get('include', 'False') == 'True':
+                incl = attr.attributes.get('include', False)
+                # variable attributes can be boolean from Orange 3.29
+                # they are string in older versions
+                # incl == True, since without == string "False" would be True
+                if incl == "True" or incl == True:
                     include_feats.append(attr)
         if len(include_feats) == 0 and first:
             include_feats.append(first)
         self.set_text_features(include_feats)
-
-    def extend_corpus(self, metadata, Y):
-        """
-        Append documents to corpus.
-
-        Args:
-            metadata (numpy.ndarray): Meta data
-            Y (numpy.ndarray): Class variables
-        """
-        if np.prod(self.X.shape) != 0:
-            raise ValueError("Extending corpus only works when X is empty"
-                             "while the shape of X is {}".format(self.X.shape))
-
-        self.metas = np.vstack((self.metas, metadata))
-
-        cv = self.domain.class_var
-        for val in set(filter(None, Y)):
-            if val not in cv.values:
-                cv.add_value(val)
-        new_Y = np.array([cv.to_val(i) for i in Y])[:, None]
-        self._Y = np.vstack((self._Y, new_Y))
-
-        self.X = self.W = np.zeros((self.metas.shape[0], 0))
-        Table._init_ids(self)
-
-        self._tokens = None     # invalidate tokens
-        self._set_unique_titles()
 
     def extend_attributes(
             self, X, feature_names, feature_values=None, compute_values=None,
@@ -437,6 +424,20 @@ class Corpus(Table):
             return self._base_tokens()[1]
         return self._dictionary
 
+    @property
+    def pos_tags(self):
+        """
+            np.ndarray: A list of lists containing POS tags. If there are no
+            POS tags available, return None.
+        """
+        if self._pos_tags is None:
+            return None
+        return np.array(self._pos_tags, dtype=object)
+
+    @pos_tags.setter
+    def pos_tags(self, pos_tags):
+        self._pos_tags = pos_tags
+
     def ngrams_iterator(self, join_with=' ', include_postags=False):
         if self.pos_tags is None:
             include_postags = False
@@ -486,6 +487,7 @@ class Corpus(Table):
         c.used_preprocessor = self.used_preprocessor
         c._titles = self._titles
         c._pp_documents = self._pp_documents
+        c._ngrams_corpus = self._ngrams_corpus
         return c
 
     @staticmethod
@@ -547,21 +549,26 @@ class Corpus(Table):
 
     @classmethod
     def from_table(cls, domain, source, row_indices=...):
-        t = super().from_table(domain, source, row_indices)
-        c = Corpus(t.domain, t.X, t.Y, t.metas, t.W, ids=t.ids)
+        c = super().from_table(domain, source, row_indices)
         Corpus.retain_preprocessing(source, c, row_indices)
         return c
 
     @classmethod
     def from_numpy(cls, *args, **kwargs):
-        c = super().from_numpy(*args, **kwargs)
-        c._set_unique_titles()
+        t = super().from_numpy(*args, **kwargs)
+        # t is corpus but its constructor was not called since from_numpy
+        # calls just class method __new__, call it here to set default values
+        # for attributes such as _titles, _tokens, preprocessors, text_features
+        c = Corpus(t.domain, t.X, t.Y, t.metas, t.W, ids=t.ids)
         return c
 
     @classmethod
     def from_list(cls, domain, rows, weights=None):
-        c = super().from_list(domain, rows, weights)
-        c._set_unique_titles()
+        t = super().from_list(domain, rows, weights)
+        # t is corpus but its constructor was not called since from_numpy
+        # calls just class method __new__, call it here to set default values
+        # for attributes such as _titles, _tokens, preprocessors, text_features
+        c = Corpus(t.domain, t.X, t.Y, t.metas, t.W, ids=t.ids)
         return c
 
     @classmethod
@@ -578,9 +585,7 @@ class Corpus(Table):
             abs_path = os.path.join(get_sample_corpora_dir(), filename)
             if not abs_path.endswith('.tab'):
                 abs_path += '.tab'
-            if not os.path.exists(abs_path):
-                raise FileNotFoundError('File "{}" not found.'.format(filename))
-            else:
+            if os.path.exists(abs_path):
                 filename = abs_path
 
         table = Table.from_file(filename)
@@ -628,6 +633,11 @@ class Corpus(Table):
             new.ngram_range = orig.ngram_range
             new.attributes = orig.attributes
             new.used_preprocessor = orig.used_preprocessor
+            if orig._ngrams_corpus is not None:
+                new.ngrams_corpus = orig._ngrams_corpus[key]
+        else:  # orig is not Corpus
+            new._set_unique_titles()
+            new._infer_text_features()
 
     def __eq__(self, other):
         def arrays_equal(a, b):
@@ -647,3 +657,23 @@ class Corpus(Table):
                 np.array_equal(self.pos_tags, other.pos_tags) and
                 self.domain == other.domain and
                 self.ngram_range == other.ngram_range)
+
+
+if summarize:
+    # summarize is not available in older versions of orange-widget-base
+    # skip if not available
+    @summarize.register(Corpus)
+    def summarize_(corpus: Corpus) -> PartialSummary:
+        """
+        Provides automated input and output summaries for Corpus
+        """
+        table_summary = summarize.dispatch(Table)(corpus)
+        extras = (
+            (
+                f"<br/><nobr>Tokens: {sum(map(len, corpus.tokens))}, "
+                f"Types: {len(corpus.dictionary)}</nobr>"
+            )
+            if corpus.has_tokens()
+            else "<br/><nobr>Corpus is not preprocessed</nobr>"
+        )
+        return PartialSummary(table_summary.summary, table_summary.details + extras)

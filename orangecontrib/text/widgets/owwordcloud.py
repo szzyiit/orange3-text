@@ -2,7 +2,7 @@
 from collections import Counter
 from itertools import cycle
 from math import pi as PI
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from AnyQt import QtCore
@@ -105,8 +105,7 @@ class OWWordCloud(OWWidget, ConcurrentWidgetMixin):
     name = "词云(Word Cloud)"
     priority = 510
     icon = "icons/WordCloud.svg"
-    keywords = ['ciyun', 'yun']
-    category = 'text'
+    category = '文本挖掘(Text Mining)'
 
     class Inputs:
         corpus = Input("语料库(Corpus)", Corpus, default=True, replaces=['Corpus'])
@@ -147,8 +146,6 @@ class OWWordCloud(OWWidget, ConcurrentWidgetMixin):
         self.combined_size_length = None
         self._create_layout()
         self.on_corpus_change(None)
-        self.update_input_summary()
-        self.update_output_summary(None, None)
 
     def _new_webview(self):
         HTML = """
@@ -443,7 +440,6 @@ span.selected {color:red !important}
             self._apply_corpus()
         else:
             self.clear()
-            self.update_input_summary()
             return
 
         self.Warning.topic_precedence(
@@ -453,7 +449,6 @@ span.selected {color:red !important}
             if self.selected_words:
                 self.update_selection(self.selected_words)
         self.commit()
-        self.update_input_summary()
 
     def clear(self):
         self._new_webview()
@@ -493,53 +488,6 @@ span.selected {color:red !important}
             )
             topic.name = "Selected Words"
         self.Outputs.selected_words.send(topic)
-        self.update_output_summary(
-            len(out) if out is not None else None,
-            len(topic) if topic is not None else None,
-        )
-
-    def update_input_summary(self) -> None:
-        if self.corpus is None and self.topic is None:
-            self.info.set_input_summary(self.info.NoInput)
-        else:
-            input_string = ""
-            input_numbers = ""
-            if self.corpus is not None:
-                input_string += (
-                    f"{len(self.corpus)} documents with "
-                    f"{len(self.corpus_counter)} words\n"
-                )
-                input_numbers += str(len(self.corpus_counter))
-            if self.topic is not None:
-                input_string += f"{self.n_topic_words} words in a topic."
-                input_numbers += (
-                    f"{' | ' if input_numbers else ''}" f"{self.n_topic_words}"
-                )
-            self.info.set_input_summary(input_numbers, input_string)
-
-    def update_output_summary(
-        self, cor_output_len: Optional[int], n_selected: Optional[int]
-    ) -> None:
-        if (
-            cor_output_len is None
-            and n_selected is None
-            and (self.corpus_counter is None or len(self.corpus_counter) == 0)
-        ):
-            self.info.set_output_summary(self.info.NoOutput)
-        else:
-            cc_len = (
-                len(self.corpus_counter)
-                if self.corpus_counter is not None
-                else 0
-            )
-            input_numbers = f"{cor_output_len or 0} | {n_selected or 0} | " \
-                            f"{cc_len}"
-            input_string = (
-                f"{cor_output_len or 0} documents\n"
-                f"{n_selected or 0} selected words\n"
-                f"{cc_len} words with counts"
-            )
-            self.info.set_output_summary(input_numbers, input_string)
 
     def send_report(self):
         if self.webview:

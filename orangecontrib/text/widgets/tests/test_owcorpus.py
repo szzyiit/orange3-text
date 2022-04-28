@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import Mock
 
 import numpy as np
 from Orange.data import Table, Domain, StringVariable, ContinuousVariable
@@ -11,7 +10,7 @@ from orangecontrib.text.widgets.owcorpus import OWCorpus
 
 class TestOWCorpus(WidgetTest):
     def setUp(self):
-        self.widget = self.create_widget(OWCorpus)
+        self.widget: OWCorpus = self.create_widget(OWCorpus)
 
     def check_output(self, sel_title):
         """
@@ -185,76 +184,6 @@ class TestOWCorpus(WidgetTest):
         self.assertEqual(data.domain["c"], self.widget.title_variable)
         self.check_output("c")
 
-    def test_input_status(self):
-        """
-        Test input, output info
-        """
-        data = Corpus.from_file("election-tweets-2016")
-        input_sum = self.widget.info.set_input_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        input_sum.assert_called_with(
-            str(len(data)), f"{len(data)} data instances on input")
-        input_sum.reset_mock()
-        self.send_signal(self.widget.Inputs.data, data[:1])
-        input_sum.assert_called_with("1", "1 data instance on input")
-        input_sum.reset_mock()
-
-        self.send_signal(self.widget.Inputs.data, None)
-        input_sum.assert_called_with(self.widget.info.NoInput)
-        input_sum.reset_mock()
-
-    def test_output_status(self):
-        """
-        Test input, output info
-        """
-        # when input signal
-        data = Corpus.from_file("election-tweets-2016")
-        out_sum = self.widget.info.set_output_summary = Mock()
-
-        self.send_signal(self.widget.Inputs.data, data)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            str(len(data)),
-            "6444 document(s)\n4 text features(s)\n7 other feature(s)\n"
-            "Classification; discrete class with 2 values.")
-        out_sum.reset_mock()
-
-        # corpus without class
-        data1 = Corpus(Domain(data.domain.attributes, metas=data.domain.metas),
-                       data.X, metas=data.metas,
-                       text_features=data.text_features)
-        self.send_signal(self.widget.Inputs.data, data1)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            str(len(data)),
-            "6444 document(s)\n4 text features(s)\n7 other feature(s)")
-        out_sum.reset_mock()
-
-        # corpus with continuous class
-        data1 = Corpus(Domain(data.domain.attributes,
-                              ContinuousVariable("a"),
-                              metas=data.domain.metas),
-                       data.X, np.random.rand(len(data), 1),
-                       metas=data.metas,
-                       text_features=data.text_features)
-        self.send_signal(self.widget.Inputs.data, data1)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            str(len(data)),
-            "6444 document(s)\n4 text features(s)\n7 other feature(s)\n"
-            "Regression; numerical class.")
-        out_sum.reset_mock()
-
-        # default dataset is on the output
-        self.send_signal(self.widget.Inputs.data, None)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            "140",
-            "140 document(s)\n1 text features(s)\n0 other feature(s)\n"
-            "Classification; discrete class with 2 values.")
-        out_sum.reset_mock()
-
     def test_keep_selected_variables(self):
         """
         When domain just slightly changes selected text variables should
@@ -285,6 +214,40 @@ class TestOWCorpus(WidgetTest):
         self.send_signal(self.widget.Inputs.data, data)
         self.wait_until_finished()
         self.assertListEqual(list(prew_selected), self.widget.used_attrs)
+
+    def test_no_text_feature(self):
+        """
+        Test with data which have empty text_features. Widget should not show
+        the error but, should have all features unused.
+        """
+        # widget already loads book-excerpts from file and store context
+        # settings this call restore context settings to default otherwise
+        # Text variable is moved to used_attributes by the context
+        self.widget.settingsHandler.reset_to_original(self.widget)
+        data = Corpus.from_file("book-excerpts")
+        data.text_features = []
+        self.send_signal(self.widget.Inputs.data, data)
+        self.wait_until_finished()
+        self.assertFalse(
+            self.widget.Error.corpus_without_text_features.is_shown()
+        )
+        self.assertEqual(0, len(list(self.widget.used_attrs_model)))
+        self.assertListEqual(
+            [data.domain["Text"]],
+            list(self.widget.unused_attrs_model)
+        )
+
+    def test_corpus_without_text_features(self):
+        """
+        Test if corpus_without_text_features is correctly raised for data
+        without text features
+        """
+        data = Table("iris")
+        self.send_signal(self.widget.Inputs.data, data)
+        self.wait_until_finished()
+        self.assertTrue(
+            self.widget.Error.corpus_without_text_features.is_shown()
+        )
 
 
 if __name__ == "__main__":

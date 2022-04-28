@@ -1,11 +1,16 @@
 import unittest
-from unittest.mock import Mock
 
 import Orange
+import numpy as np
 from Orange.data import Table, Domain
 from Orange.widgets.tests.base import WidgetTest
 
 from orangecontrib.text.corpus import Corpus
+from orangecontrib.text.preprocess import (
+    PreprocessorList,
+    BASE_TRANSFORMER,
+    RegexpTokenizer,
+)
 from orangecontrib.text.vectorization import BowVectorizer
 from orangecontrib.text.widgets.owwordenrichment import OWWordEnrichment
 
@@ -25,7 +30,7 @@ class TestWordEnrichment(WidgetTest):
 
         self.send_signal(widget.Inputs.data, self.corpus_vect)
         self.send_signal(widget.Inputs.selected_data, self.subset_corpus)
-        self.wait_until_finished(timeout=10000)
+        self.wait_until_finished(timeout=100000)
 
         # test p-value filter
         widget.filter_by_p = True
@@ -100,6 +105,18 @@ class TestWordEnrichment(WidgetTest):
         self.send_signal(w.Inputs.selected_data, None)
         self.assertFalse(self.widget.Error.no_bow_features.is_shown())
 
+    def test_selected_data_is_table(self):
+        w = self.widget
+        iris = Table("iris")
+
+        self.send_signal(w.Inputs.data, self.corpus_vect)
+        self.send_signal(w.Inputs.selected_data, iris[:10])
+        self.assertTrue(self.widget.Error.no_bow_features.is_shown())
+
+        self.send_signal(w.Inputs.data, self.corpus_vect)
+        self.send_signal(w.Inputs.selected_data, self.subset_corpus)
+        self.assertFalse(self.widget.Error.no_bow_features.is_shown())
+
     def test_all_selected(self):
         w = self.widget
 
@@ -137,50 +154,6 @@ class TestWordEnrichment(WidgetTest):
 
     @unittest.skipIf(
         Orange.__version__ < "3.24.0", "wait_until_finished not supported")
-    def test_input_info(self):
-        w = self.widget
-        input_sum = w.info.set_input_summary = Mock()
-
-        self.send_signal(w.Inputs.selected_data, self.subset_corpus)
-        self.send_signal(w.Inputs.data, self.corpus_vect)
-
-        input_sum.assert_called_with(
-            "5923|1204", "Total words: 5923\nWords in subset: 1204")
-
-        self.wait_until_stop_blocking()
-        self.send_signal(w.Inputs.selected_data, None)
-        self.send_signal(w.Inputs.data, None)
-        input_sum.assert_called_with(w.info.NoInput)
-
-    @unittest.skipIf(
-        Orange.__version__ < "3.24.0", "wait_until_finished not supported")
-    def test_output_info(self):
-        w = self.widget
-        w.filter_p_value = 1e-3
-        w.filter_by_p = True
-        w.filter_by_fdr = False
-
-        self.send_signal(w.Inputs.selected_data, self.subset_corpus)
-        self.send_signal(w.Inputs.data, self.corpus_vect)
-        self.wait_until_finished(timeout=10000)
-
-        self.assertEqual(w.info_fil.text(), "Words displayed: 3")
-
-        # test fdr filter
-        w.filter_by_p = True
-        w.filter_p_value = 1e-4
-        w.filter_by_fdr = True
-        w.filter_fdr_value = 1e-4
-        w.filter_and_display()
-        self.assertEqual(w.info_fil.text(), "Words displayed: 0")
-
-        self.send_signal(w.Inputs.selected_data, None)
-        self.assertEqual(w.info_fil.text(), "Words displayed: 0")
-        self.send_signal(w.Inputs.data, None)
-        self.assertEqual(w.info_fil.text(), "Words displayed: 0")
-
-    @unittest.skipIf(
-        Orange.__version__ < "3.24.0", "wait_until_finished not supported")
     def test_filter_changed(self):
         """
         This case tests whether function are correctly triggered when
@@ -190,7 +163,7 @@ class TestWordEnrichment(WidgetTest):
 
         self.send_signal(w.Inputs.data, self.corpus_vect)
         self.send_signal(w.Inputs.selected_data, self.subset_corpus)
-        self.wait_until_finished(timeout=10000)
+        self.wait_until_finished(timeout=100000)
 
         # test p-value filter
         w.controls.filter_by_p.click()  # set to true
@@ -232,9 +205,65 @@ class TestWordEnrichment(WidgetTest):
 
         self.send_signal(w.Inputs.data, self.corpus_vect)
         self.send_signal(w.Inputs.selected_data, self.subset_corpus)
-        self.wait_until_finished(timeout=10000)
+        self.wait_until_finished(timeout=100000)
 
         w.send_report()
+
+    def test_result(self):
+        pp = PreprocessorList([BASE_TRANSFORMER, RegexpTokenizer()])
+        corpus = pp(Corpus.from_file("book-excerpts")[::3])
+        vect = BowVectorizer()
+        corpus_vect = vect.transform(corpus)
+
+        words = ["beheld", "events", "dragged", "basin", "visit", "have"]
+        d = Domain([corpus_vect.domain[w] for w in words])
+        corpus_vect = corpus_vect.transform(d)
+
+        self.send_signal(self.widget.Inputs.data, corpus_vect)
+        self.send_signal(self.widget.Inputs.selected_data, corpus_vect[:1])
+        self.wait_until_finished(timeout=100000)
+
+        np.testing.assert_array_almost_equal(
+            self.widget.results.p_values,
+            [0.02128, 1, 0.04255, 0.06383, 0.08511, 0.97872],
+            decimal=5,
+        )
+        np.testing.assert_array_almost_equal(
+            self.widget.results.fdr_values,
+            [0.12766, 1, 0.12766, 0.12766, 0.12766, 1],
+            decimal=5,
+        )
+
+    def test_output(self):
+        widget = self.widget
+
+        self.send_signal(widget.Inputs.data, self.corpus_vect)
+        self.send_signal(widget.Inputs.selected_data, self.subset_corpus)
+        self.wait_until_finished(timeout=100000)
+
+        # output should correspond to shown results
+        widget.filter_by_p = True
+        widget.filter_p_value = 1e-3
+        widget.filter_by_fdr = False
+        widget.filter_fdr_value = 0.01
+
+        widget.filter_and_display()
+        widget.commit()
+        output = self.get_output(self.widget.Outputs.words)
+        self.assertEqual(
+            len(output), int(widget.info_fil.text().split(": ")[1])
+        )
+
+        # test empty results
+        widget.filter_by_p = True
+        widget.filter_p_value = 1e-3
+        widget.filter_by_fdr = True
+        widget.filter_fdr_value = 0.01
+
+        widget.filter_and_display()
+        widget.commit()
+        output = self.get_output(self.widget.Outputs.words)
+        self.assertEqual(len(output), 0)
 
 
 if __name__ == "__main__":

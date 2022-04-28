@@ -12,7 +12,7 @@ class OWTBagOfWords(owbasevectorizer.OWBaseVectorizer):
     icon = 'icons/BagOfWords.svg'
     priority = 300
     keywords = ["BOW", 'cidai']
-    category = 'text'
+    category = '文本挖掘(Text Mining)'
 
     Method = BowVectorizer
 

@@ -5,6 +5,96 @@ Change Log
 ------------
 * ...
 
+[1.7.0] - 2022-04-08
+--------------------
+##### Enhancements
+* Twitter: adapt to APIv2 ([#780](../../pull/780))
+
+##### Bugfixes
+* Semantic Viewer: Put NaNs last when sorting ([#800](../../pull/800))
+* Twitter: Update for Python 3.10 ([#793](../../pull/793))
+
+[1.6.2] - 2022-01-10
+--------------------
+##### Bugfixes
+* Solved numpy 1.22 incompatibility
+
+[1.6.1] - 2021-11-28
+--------------------
+##### Enhancements
+* Semantic Viewer: New widget ([#748](../../pull/748))
+
+##### Bugfixes
+* score-documents: handle document titles with newlines ([#754](../../pull/754))
+
+[1.6.0] - 2021-11-23
+--------------------
+##### Enhancements
+* OWLDAvis ([#731](../../pull/731))
+* Corpus Viewer: Run search when finished typing the query ([#740](../../pull/740))
+
+##### Bugfixes
+* Semantic Search: increase maximal allowed chunk size, fix error when timeout ([#752](../../pull/752))
+* Topic Modeling: Base selection style on itemdelegates ([#751](../../pull/751))
+* Topic - remove topic computations in chunk which results in poor topics ([#750](../../pull/750))
+* Semantic Search - fix callback to return proportions ([#747](../../pull/747))
+* BoW: use training weights on test data ([#745](../../pull/745))
+* OWScoreDocuments: Ensure unique names on output ([#744](../../pull/744))
+* Sparse2CorpusSliceable: add support for np.ndarray as key ([#737](../../pull/737))
+* Store ngrams_corpus correctly ([#729](../../pull/729))
+
+[1.5.3] - 2021-10-08
+--------------------
+##### Bugfixes
+*  UDPipe Lemmatizer: remove self.model from pickle ([#722](../../pull/722))
+* Fixes for Tweepy 4.0.0 ([#725](../../pull/725))
+
+
+[1.5.1] - 2021-09-16
+--------------------
+##### Bugfixes
+* Fixing bug with non-working Gensim library
+
+
+[1.5.0] - 2021-09-13
+--------------------
+
+##### Enhancements
+* Keywords: Add 'Embedding' scoring method ([#666](../../pull/666))
+* OW Corpus Viewer: Add annotated corpus output ([#672](../../pull/672))
+* Concordance - search in the separate thread ([#668](../../pull/668))
+* OWPreprocess Text: add option to filter on POS tags ([#679](../../pull/679))
+* Topic Modeling: Add topic evaluation scores ([#687](../../pull/687))
+* OWStatistics: Add new statistics method ([#676](../../pull/676))
+* Import Documents: Add conllu reader ([#675](../../pull/675))
+* OWPreprocess Text: Add Lemmagen normalizer ([#708](../../pull/708))
+* normalize: speedup preprocessing with caching ([#709](../../pull/709))
+* Score documents: Document selection and selection output ([#710](../../pull/710))
+
+##### Bugfixes
+* Import Documents: Read metas as the right type ([#677](../../pull/677))
+* LDA: Add random state ([#688](../../pull/688))
+* Preprocess: Filter POS tags along with tokens ([#692](../../pull/692))
+* Topic Modeling: Remove tags from display of topics ([#693](../../pull/693))
+* Score documents: fix word preprocessing ([#707](../../pull/707))
+* Make Lemmagen lemmatizer picklable ([#713](../../pull/713))
+* Document Embedder: fix default language setting ([#716](../../pull/716))
+
+[1.4.0] - 2021-05-27
+--------------------
+
+##### Enhancements
+* Score documents widget ([#632](../../pull/632))
+* Import documents: Import from URL ([#637](../../pull/637))
+* Extract Keywords: New widget ([#644](../../pull/644))
+* Word List: New widget ([#634](../../pull/634))
+
+##### Bugfixes
+* Fix infer text features ([#645](../../pull/645))
+* Corpus fix from_numpy and from_list; modify widget to work with corpuses without text_features ([#627](../../pull/627))
+* Corpus Viewer: Handle empty corpus ([#628](../../pull/628))
+* Import Documents: Handle loading folder with no readable files ([#626](../../pull/626))
+
 [1.3.1] - 2021-01-22
 --------------------
 ##### Bugfixes
@@ -245,7 +335,15 @@ Change Log
 --------------------
 
 
-[next]: https://github.com/biolab/orange3-text/compare/1.3.0...HEAD
+[next]: https://github.com/biolab/orange3-text/compare/1.6.2...HEAD
+[1.7.0]: https://github.com/biolab/orange3-text/compare/1.6.2...1.7.0
+[1.6.2]: https://github.com/biolab/orange3-text/compare/1.6.1...1.6.2
+[1.6.1]: https://github.com/biolab/orange3-text/compare/1.6.0...1.6.1
+[1.6.0]: https://github.com/biolab/orange3-text/compare/1.5.3...1.6.0
+[1.5.3]: https://github.com/biolab/orange3-text/compare/1.5.1...1.5.3
+[1.5.1]: https://github.com/biolab/orange3-text/compare/1.5.0...1.5.1
+[1.5.0]: https://github.com/biolab/orange3-text/compare/1.4.0...1.5.0
+[1.4.0]: https://github.com/biolab/orange3-text/compare/1.3.1...1.4.0
 [1.3.1]: https://github.com/biolab/orange3-text/compare/1.3.0...1.3.1
 [1.3.0]: https://github.com/biolab/orange3-text/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/biolab/orange3-text/compare/1.1.0...1.2.0

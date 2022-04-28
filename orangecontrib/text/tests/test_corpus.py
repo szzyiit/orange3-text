@@ -1,16 +1,34 @@
 import os
 import pickle
 import unittest
+from unittest import skipIf
 
 import numpy as np
+import pkg_resources
 from numpy.testing import assert_array_equal
+from orangecontrib.text.preprocess import RegexpTokenizer
 from scipy.sparse import csr_matrix, issparse
 
-from Orange.data import Table, DiscreteVariable, StringVariable, Domain, ContinuousVariable
+from Orange.data import (
+    Table,
+    DiscreteVariable,
+    StringVariable,
+    Domain,
+    ContinuousVariable,
+    dataset_dirs,
+)
 
 from orangecontrib.text import preprocess
 from orangecontrib.text.corpus import Corpus
 from orangecontrib.text.tag import AveragedPerceptronTagger
+
+try:
+    from orangewidget.utils.signals import summarize
+    # import to check if Table summary is available - if summarize_by_name does
+    # not exist Orange (3.28) does not support automated summaries
+    from Orange.widgets.utils.state_summary import summarize_by_name
+except ImportError:
+    summarize = None
 
 
 class CorpusTests(unittest.TestCase):
@@ -29,15 +47,20 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(new.X.shape, empty_X.shape)
 
     def test_corpus_from_file(self):
+        dd_before = dataset_dirs.copy()
         c = Corpus.from_file('book-excerpts')
+        # from_file temporarily change dataset_dirs
+        # test that dataset_dirs remains unchanged after from_file call
+        self.assertListEqual(dd_before, dataset_dirs)
+
         self.assertEqual(len(c), 140)
-        self.assertEqual(len(c.domain), 1)
+        self.assertEqual(len(c.domain.variables), 1)
         self.assertEqual(len(c.domain.metas), 1)
         self.assertEqual(c.metas.shape, (140, 1))
 
         c = Corpus.from_file('deerwester')
         self.assertEqual(len(c), 9)
-        self.assertEqual(len(c.domain), 1)
+        self.assertEqual(len(c.domain.variables), 1)
         self.assertEqual(len(c.domain.metas), 1)
         self.assertEqual(c.metas.shape, (9, 1))
 
@@ -53,33 +76,40 @@ class CorpusTests(unittest.TestCase):
         c2 = Corpus.from_file('book-excerpts.tab')
         self.assertEqual(c, c2)
 
+    def test_corpus_from_numpy(self):
+        domain = Domain(
+            [], metas=[StringVariable("title"), StringVariable("a")]
+        )
+        corpus = Corpus.from_numpy(
+            domain,
+            np.empty((2, 0)),
+            metas=np.array([["title1", "a"], ["title2", "b"]])
+        )
+        self.assertEqual(2, len(corpus))
+        assert_array_equal(["Document 1", "Document 2"], corpus.titles)
+        self.assertListEqual([StringVariable("title")], corpus.text_features)
+        self.assertIsNone(corpus._tokens)
+        self.assertListEqual([], corpus.used_preprocessor.preprocessors)
+
+    def test_corpus_from_list(self):
+        domain = Domain(
+            [], metas=[StringVariable("title"), StringVariable("a")]
+        )
+        corpus = Corpus.from_list(domain, [["title1", "a"], ["title2", "b"]])
+        self.assertEqual(2, len(corpus))
+        assert_array_equal(["Document 1", "Document 2"], corpus.titles)
+        self.assertListEqual([StringVariable("title")], corpus.text_features)
+        self.assertIsNone(corpus._tokens)
+        self.assertListEqual([], corpus.used_preprocessor.preprocessors)
+
     def test_corpus_from_file_missing(self):
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(OSError):
             Corpus.from_file('missing_file')
 
     def test_corpus_from_init(self):
         c = Corpus.from_file('book-excerpts')
-        c2 = Corpus(c.domain, c.X, c.Y, c.metas, c.text_features)
+        c2 = Corpus(c.domain, c.X, c.Y, c.metas, c.W, c.text_features)
         self.assertEqual(c, c2)
-
-    def test_extend_corpus(self):
-        c = Corpus.from_file('book-excerpts')
-        n_classes = len(c.domain.class_var.values)
-        c_copy = c.copy()
-        new_y = [c.domain.class_var.values[int(i)] for i in c.Y]
-        new_y[0] = 'teenager'
-        c.extend_corpus(c.metas, new_y)
-
-        self.assertEqual(len(c), len(c_copy)*2)
-        self.assertEqual(c.Y.shape[0], c_copy.Y.shape[0]*2)
-        self.assertEqual(c.metas.shape[0], c_copy.metas.shape[0]*2)
-        self.assertEqual(c.metas.shape[1], c_copy.metas.shape[1])
-        self.assertEqual(len(c_copy.domain.class_var.values), n_classes+1)
-
-    def test_extend_corpus_non_empty_X(self):
-        c = Corpus.from_file('election-tweets-2016')[:10]
-        with self.assertRaises(ValueError):
-            c.extend_corpus(c.metas, c.Y)
 
     def test_extend_attributes(self):
         """
@@ -222,6 +252,35 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(len(tf), 1)
         self.assertEqual(tf[0].name, 'Text')
 
+    def test_infer_text_features_str_include(self):
+        """
+        In orange 3.29 include attribute is read as boolean. corpus must still
+        support older versions of Orange where include attribute is a string.
+        Test behaviour with string attribute.
+        """
+        c = Corpus.from_file('andersen')
+        c.domain["Content"].attributes["include"] = "False"
+        c._infer_text_features()
+        self.assertListEqual(c.text_features, [c.domain["Title"]])
+
+        c.domain["Content"].attributes["include"] = "True"
+        c._infer_text_features()
+        self.assertListEqual(c.text_features, [c.domain["Content"]])
+
+    def test_infer_text_features_bool_include(self):
+        """
+        In orange 3.29 include attribute is read as boolean.
+        Test behaviour with boolean attribute.
+        """
+        c = Corpus.from_file('andersen')
+        c.domain["Content"].attributes["include"] = False
+        c._infer_text_features()
+        self.assertListEqual(c.text_features, [c.domain["Title"]])
+
+        c.domain["Content"].attributes["include"] = True
+        c._infer_text_features()
+        self.assertListEqual(c.text_features, [c.domain["Content"]])
+
     def test_documents(self):
         c = Corpus.from_file('book-excerpts')
         docs = c.documents
@@ -322,8 +381,9 @@ class CorpusTests(unittest.TestCase):
 
     def test_documents_from_sparse_features(self):
         t = Table.from_file('brown-selected')
-        c = Corpus.from_table(t.domain, t)
-        c.X = csr_matrix(c.X)
+        c = Corpus.from_file('brown-selected')
+        with c.unlocked():
+            c.X = csr_matrix(c.X)
 
         # docs from X, Y and metas
         docs = c.documents_from_features([t.domain.attributes[0], t.domain.class_var, t.domain.metas[0]])
@@ -372,6 +432,26 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual(len(sel), len(ind))
         self.assertEqual(len(sel._tokens), len(ind))
         np.testing.assert_equal(sel._tokens, c._tokens[ind])
+        self.assertEqual(sel._dictionary, c._dictionary)
+        self.assertEqual(sel.text_features, c.text_features)
+        self.assertEqual(sel.ngram_range, c.ngram_range)
+        self.assertEqual(sel.attributes, c.attributes)
+
+        ind = np.array([3, 4, 5, 6])
+        sel = c[ind]
+        self.assertEqual(len(sel), len(ind))
+        self.assertEqual(len(sel._tokens), len(ind))
+        np.testing.assert_equal(sel._tokens, c._tokens[ind])
+        self.assertEqual(sel._dictionary, c._dictionary)
+        self.assertEqual(sel.text_features, c.text_features)
+        self.assertEqual(sel.ngram_range, c.ngram_range)
+        self.assertEqual(sel.attributes, c.attributes)
+
+        ind = range(3, 7)
+        sel = c[ind]
+        self.assertEqual(len(sel), len(ind))
+        self.assertEqual(len(sel._tokens), len(ind))
+        np.testing.assert_equal(sel._tokens, c._tokens[list(ind)])
         self.assertEqual(sel._dictionary, c._dictionary)
         self.assertEqual(sel.text_features, c.text_features)
         self.assertEqual(sel.ngram_range, c.ngram_range)
@@ -572,6 +652,42 @@ class CorpusTests(unittest.TestCase):
         for pp in self.pp_list:
             c = pp(c)
         pickle.dumps(c)
+
+
+@skipIf(summarize is None, "summarize is not available for orange3<=3.28")
+class TestCorpusSummaries(unittest.TestCase):
+    def test_corpus_not_preprocessed(self):
+        """Check if details part of the summary is formatted correctly"""
+        corpus = Corpus.from_file("book-excerpts")
+
+        n_features = len(corpus.domain.variables) + len(corpus.domain.metas)
+        details = (
+            f"<nobr>{len(corpus)} instances, {n_features} variables</nobr><br/>"
+            f"<nobr>Features: — (no missing values)</nobr><br/>"
+            f"<nobr>Target: categorical</nobr><br/>"
+            f"<nobr>Metas: string</nobr><br/>"
+            f"<nobr>Corpus is not preprocessed</nobr>"
+        )
+        summary = summarize.dispatch(Corpus)(corpus)
+        self.assertEqual(140, summary.summary)
+        self.assertEqual(details, summary.details)
+
+    def test_corpus_preprocessed(self):
+        """Check if details part of the summary is formatted correctly"""
+        corpus = Corpus.from_file("book-excerpts")
+        corpus = RegexpTokenizer()(corpus)
+
+        n_features = len(corpus.domain.variables) + len(corpus.domain.metas)
+        details = (
+            f"<nobr>{len(corpus)} instances, {n_features} variables</nobr><br/>"
+            f"<nobr>Features: — (no missing values)</nobr><br/>"
+            f"<nobr>Target: categorical</nobr><br/>"
+            f"<nobr>Metas: string</nobr><br/>"
+            f"<nobr>Tokens: 128020, Types: 11712</nobr>"
+        )
+        summary = summarize.dispatch(Corpus)(corpus)
+        self.assertEqual(140, summary.summary)
+        self.assertEqual(details, summary.details)
 
 
 if __name__ == "__main__":

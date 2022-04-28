@@ -1,3 +1,4 @@
+import os
 import re
 import sre_constants
 from itertools import chain
@@ -15,6 +16,7 @@ from AnyQt.QtWidgets import (QListView, QSizePolicy, QTableView,
 from Orange.data.domain import filter_visible
 from Orange.widgets import gui
 from Orange.widgets.settings import Setting, ContextSetting, PerfectDomainContextHandler
+from Orange.widgets.utils.annotated_data import create_annotated_table
 from Orange.widgets.widget import OWWidget, Msg, Input, Output
 from orangecontrib.text.corpus import Corpus
 
@@ -24,8 +26,8 @@ class OWCorpusViewer(OWWidget):
     description = "显示语料库内容."
     icon = "icons/CorpusViewer.svg"
     priority = 500
-    keywords = ['yuliaochakan', 'chakan']
-    category = 'text'
+    category = '文本挖掘(Text Mining)'
+
 
     class Inputs:
         corpus = Input("语料库(Corpus)", Corpus, replaces=["Data", 'Corpus'])
@@ -33,6 +35,7 @@ class OWCorpusViewer(OWWidget):
     class Outputs:
         matching_docs = Output("匹配的文档(Matching Docs)", Corpus, default=True, replaces=['Matching Docs'])
         other_docs = Output("其他文档(Other Docs)", Corpus, replaces=['Corpus'])
+        corpus = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
 
     settingsHandler = PerfectDomainContextHandler(
         match_values = PerfectDomainContextHandler.MATCH_VALUES_ALL
@@ -59,17 +62,15 @@ class OWCorpusViewer(OWWidget):
         self.doc_webview = None         # WebView for showing content
         self.search_features = []       # two copies are needed since Display allows drag & drop
         self.display_list_indices = [0]
+        self.matches = 0                # Matches of the query
 
         # Info attributes
         self.update_info()
         info_box = gui.widgetBox(self.controlArea, '信息')
-        gui.label(info_box, self, '文档: %(n_documents)s')
-        gui.label(info_box, self, '预处: %(is_preprocessed)s')
-        gui.label(info_box, self, '  ◦ 词(Token): %(n_tokens)s')
-        gui.label(info_box, self, '  ◦ 类型: %(n_types)s')
-        gui.label(info_box, self, 'POS 标签: %(is_pos_tagged)s')
-        gui.label(info_box, self, 'N-grams 范围: %(ngram_range)s')
-        gui.label(info_box, self, '匹配: %(n_matching)s')
+        gui.label(info_box, self, '词(Tokens): %(n_tokens)s')
+        gui.label(info_box, self, '类型: %(n_types)s')
+        gui.label(info_box, self, '匹配的文档: %(n_matching)s')
+        gui.label(info_box, self, '匹配的: %(n_matches)s')
 
         # Search features
         self.search_listbox = gui.listBox(
@@ -94,8 +95,8 @@ class OWCorpusViewer(OWWidget):
                                          orientation=Qt.Horizontal,
                                          sizePolicy=QSizePolicy(QSizePolicy.MinimumExpanding,
                                                                 QSizePolicy.Fixed),
-                                         label='正则表达式筛选:')
-        self.filter_input.textChanged.connect(self.refresh_search)
+                                         label='正则表达式筛选:',
+                                         callback=self.refresh_search)
 
         # Main area
         self.splitter = QSplitter(
@@ -142,7 +143,8 @@ class OWCorpusViewer(OWWidget):
             self.display_features = list(filter_visible(chain(domain.variables, domain.metas)))
             self.search_indices = list(range(len(self.search_features)))
             self.display_indices = list(range(len(self.display_features)))
-            self.selected_documents = [corpus.titles[0]]
+            self.selected_documents = [corpus.titles[0]] if \
+                corpus.titles is not None and len(corpus.titles) else []
             self.openContext(self.corpus)
             self.display_list_indices = self.display_indices
             self.regenerate_docs()
@@ -176,24 +178,26 @@ class OWCorpusViewer(OWWidget):
         """ List documents into the left scrolling area """
         if self.corpus_docs is None:
             return
+        # TODO: remove search_keyword??
         search_keyword = self.regexp_filter.strip('|')
+        matches = 0
         try:
             reg = re.compile(search_keyword, re.IGNORECASE)
         except sre_constants.error:
             return
 
-        def is_match(x):
-            return not bool(search_keyword) or reg.search(x)
-
         self.doc_list_model.clear()
 
         for i, (doc, title, content) in enumerate(zip(self.corpus, self.corpus.titles,
                                                       self.corpus_docs)):
-            if is_match(content):
+            res = len(list(reg.finditer(content))) if self.regexp_filter else 0
+            if not self.regexp_filter or res:
+                matches += res
                 item = QStandardItem()
                 item.setData(str(title), Qt.DisplayRole)
                 item.setData(doc, Qt.UserRole)
                 self.doc_list_model.appendRow(item)
+        self.matches = matches
 
     def get_selected_documents_from_view(self) -> Set[str]:
         """
@@ -349,6 +353,7 @@ class OWCorpusViewer(OWWidget):
                 value = value.replace('\n', '<br/>')
                 is_image = feature.attributes.get('type', '') == 'image'
                 if is_image and value != '?':
+                    value = os.path.join(feature.attributes.get("origin", ""), value)
                     value = '<img src="{}"></img>'.format(value)
                 html += '<tr><td class="variables"><strong>{}:</strong></td>' \
                         '<td class="content">{}</td></tr>'.format(
@@ -406,24 +411,18 @@ class OWCorpusViewer(OWWidget):
 
     def update_info(self):
         if self.corpus is not None:
-            self.n_documents = len(self.corpus)
-            self.n_matching = '{}/{}'.format(self.doc_list_model.rowCount(), self.n_documents)
+            self.n_matching = '{}/{}'.format(self.doc_list_model.rowCount(), len(self.corpus))
+            self.n_matches = self.matches if self.matches else 'n/a'
             self.n_tokens = sum(map(len, self.corpus.tokens)) if self.corpus.has_tokens() else 'n/a'
             self.n_types = len(self.corpus.dictionary) if self.corpus.has_tokens() else 'n/a'
-            self.is_preprocessed = self.corpus.has_tokens()
-            self.is_pos_tagged = self.corpus.pos_tags is not None
-            self.ngram_range = '{}-{}'.format(*self.corpus.ngram_range)
         else:
-            self.n_documents = ''
             self.n_matching = ''
+            self.n_matches = ''
             self.n_tokens = ''
             self.n_types = ''
-            self.is_preprocessed = ''
-            self.is_pos_tagged = ''
-            self.ngram_range = ''
 
     def commit(self):
-        matched = unmatched = None
+        matched = unmatched = annotated_corpus = None
         corpus = self.corpus
         if corpus is not None:
             # it returns a set of selected documents which are in view
@@ -438,13 +437,16 @@ class OWCorpusViewer(OWWidget):
 
             matched = corpus[matched_mask] if len(matched_mask) else None
             unmatched = corpus[unmatched_mask] if len(unmatched_mask) else None
+            annotated_corpus = create_annotated_table(corpus, matched_mask)
         self.Outputs.matching_docs.send(matched)
         self.Outputs.other_docs.send(unmatched)
+        self.Outputs.corpus.send(annotated_corpus)
 
     def send_report(self):
         self.report_items((
             ("Query", self.regexp_filter),
             ("Matching documents", self.n_matching),
+            ("Matches", self.n_matches)
         ))
 
     def showEvent(self, event):

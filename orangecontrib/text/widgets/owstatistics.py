@@ -1,18 +1,21 @@
 import re
+from collections import Counter
 from copy import copy
+from itertools import groupby
 from string import punctuation
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 from AnyQt.QtCore import QSize
-from AnyQt.QtWidgets import QComboBox, QGridLayout, QLabel, QLineEdit
+from AnyQt.QtWidgets import QComboBox, QGridLayout, QLabel, QLineEdit, \
+    QSizePolicy
 
 from Orange.widgets import gui
 from Orange.widgets.settings import ContextSetting
 from Orange.widgets.utils.concurrent import ConcurrentWidgetMixin, TaskState
-from Orange.widgets.utils.state_summary import format_summary_details
 from Orange.widgets.utils.widgetpreview import WidgetPreview
 from Orange.widgets.widget import Input, Output, OWWidget
+from nltk import tokenize
 from orangewidget.widget import Msg
 
 from orangecontrib.text import Corpus
@@ -20,7 +23,6 @@ from orangecontrib.text import Corpus
 # those functions are implemented here since they are used in more statistics
 from orangecontrib.text.preprocess import (
     LowercaseTransformer,
-    Preprocessor,
     RegexpTokenizer,
     PreprocessorList)
 from orangecontrib.text.widgets.utils.context import (
@@ -326,6 +328,63 @@ def pos_tags(
     )
 
 
+def yule(
+    corpus: Corpus, _: str, callback: Callable
+) -> Optional[Tuple[np.ndarray, List[str]]]:
+    """
+    Yule's I measure: higher number is higher diversity - richer vocabulary
+    PSP volume 42 issue 2 Cover and Back matter. (1946).
+    Mathematical Proceedings of the Cambridge Philosophical Society, 42(2), B1-B2.
+    doi:10.1017/S0305004100022799
+    """
+    if corpus.pos_tags is None:
+        return None
+
+    def yules_i(tags):
+        callback()
+        d = Counter(tags)
+        m1 = float(len(d))
+        m2 = sum([len(list(g)) * (freq ** 2) for freq, g in
+                  groupby(sorted(d.values()))])
+        try:
+            return (m1 * m1) / (m2 - m1)
+        except ZeroDivisionError:
+            return 0
+
+    return (
+        np.c_[[yules_i(p) for p in corpus.pos_tags]],
+        [f"Yule's I"],
+    )
+
+
+def lix(
+    corpus: Corpus, _: str, callback: Callable
+) -> Optional[Tuple[np.ndarray, List[str]]]:
+    """
+    Readability index LIX
+    https://en.wikipedia.org/wiki/Lix_(readability_test)
+    """
+    corpus = preprocess_only_words(corpus)
+    tokenizer = tokenize.PunktSentenceTokenizer()
+
+    def lix_index(document, tokens):
+        callback()
+        # if the text is a single sentence, scores will be high
+        sentences = len(tokenizer.tokenize(document))
+        words = len(tokens)
+        long_words = len([token for token in tokens if len(token) > 6])
+        try:
+            return words/sentences + (long_words*100/words)
+        except ZeroDivisionError:
+            return 0
+
+    return (
+        np.c_[[lix_index(d, tokens) for d, tokens in zip(corpus.documents,
+                                                         corpus.tokens)]],
+        ["LIX index"],
+    )
+
+
 class ComputeValue:
     """
     Class which provides compute value functionality. It stores the function
@@ -415,9 +474,8 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
     name = "文档统计(Statistics)"
     description = "为文件创建新的统计变量。"
     keywords = ['tongji', 'wendangtongji']
-    category = 'text'
     icon = "icons/Statistics.svg"
-    
+    category = '文本挖掘(Text Mining)'
 
     class Inputs:
         corpus = Input("语料库(Corpus)", Corpus, replaces=['Corpus'])
@@ -431,6 +489,7 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         )
 
     want_main_area = False
+    mainArea_width_height_ratio = None
     settingsHandler = AlmostPerfectContextHandler(0.9)
 
     # settings
@@ -460,14 +519,12 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         self._init_statistics_box()
         box = gui.hBox(self.controlArea)
         gui.rubber(box)
-        gui.button(
-            box,
-            self,
-            "应用",
-            autoDefault=False,
-            width=180,
-            callback=self.apply,
-        )
+
+        gui.button(self.buttonsArea, self, "Apply",
+                   callback=self.apply)
+
+    def get_button(self, label, callback):
+        return
 
     def _init_statistics_box(self) -> None:
         """
@@ -479,14 +536,9 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         patternbox.layout().addLayout(self.rules_box)
         box = gui.hBox(patternbox)
         gui.button(
-            box,
-            self,
-            "+",
-            callback=self._add_row,
-            autoDefault=False,
-            flat=True,
-            minimumSize=(QSize(20, 20)),
-        )
+            box, self, "+", callback=self._add_row,
+            addToLayout=False, autoDefault=False, width=34,
+            sizePolicy=(QSizePolicy.Maximum, QSizePolicy.Maximum))
         gui.rubber(box)
         self.rules_box.setColumnMinimumWidth(1, 70)
         self.rules_box.setColumnMinimumWidth(0, 10)
@@ -507,17 +559,9 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
 
             # add delete symbol
             button = gui.button(
-                None,
-                self,
-                label="×",
-                flat=True,
-                height=20,
-                styleSheet="* {font-size: 16pt; color: silver}"
-                "*:hover {color: black}",
-                autoDefault=False,
-                callback=self._remove_row,
-            )
-            button.setMinimumSize(QSize(12, 20))
+                None, self, "×", callback=self._remove_row,
+                addToLayout=False, autoDefault=False, width=34,
+                sizePolicy=(QSizePolicy.Maximum, QSizePolicy.Maximum))
             self.rules_box.addWidget(button, n_lines, 0)
             self.remove_buttons.append(button)
 
@@ -600,16 +644,7 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
         self.result_dict = {}  # empty computational results when new data
         # reset old output - it also handle case with corpus == None
         self.Outputs.corpus.send(None)
-
-        # summary
-        if corpus:
-            self.info.set_input_summary(
-                len(corpus), format_summary_details(corpus)
-            )
-            self.apply()
-        else:
-            self.info.set_input_summary(self.info.NoInput)
-        self.info.set_output_summary(self.info.NoOutput)
+        self.apply()
 
     def apply(self) -> None:
         """
@@ -670,11 +705,6 @@ class OWStatistics(OWWidget, ConcurrentWidgetMixin):
             attributes, compute_values=comput_values
         )
         self.Outputs.corpus.send(new_corpus)
-
-        # summary
-        self.info.set_output_summary(
-            len(new_corpus), format_summary_details(new_corpus)
-        )
 
 
 if __name__ == "__main__":

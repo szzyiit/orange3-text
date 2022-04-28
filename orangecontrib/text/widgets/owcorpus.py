@@ -20,8 +20,8 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
     icon = "icons/TextFile.svg"
     priority = 100
     replaces = ["orangecontrib.text.widgets.owloadcorpus.OWLoadCorpus"]
-    keywords = ['yuliaoku']
-    category = 'text'
+    category = '文本挖掘(Text Mining)'
+
 
     class Inputs:
         data = Input('数据(Data)', Table, replaces=['Data'])
@@ -84,7 +84,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
 
         # Used Text Features
         fbox = gui.widgetBox(self.controlArea, orientation=0)
-        ubox = gui.widgetBox(fbox, "使用的文本特征", addSpace=False)
+        ubox = gui.widgetBox(fbox, "使用的文本特征")
         self.used_attrs_model = VariableListModel(enable_dnd=True)
         self.used_attrs_view = VariablesListItemView()
         self.used_attrs_view.setModel(self.used_attrs_model)
@@ -96,7 +96,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         aa.rowsRemoved.connect(self.update_feature_selection)
 
         # Ignored Text Features
-        ibox = gui.widgetBox(fbox, "忽略的文本特征", addSpace=False)
+        ibox = gui.widgetBox(fbox, "忽略的文本特征")
         self.unused_attrs_model = VariableListModel(enable_dnd=True)
         self.unused_attrs_view = VariablesListItemView()
         self.unused_attrs_view.setModel(self.unused_attrs_model)
@@ -113,8 +113,6 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
 
         # load first file
         self.file_widget.select(0)
-        self.update_output_info()
-        self.update_input_info(None)
 
     def sizeHint(self):
         return QSize(400, 300)
@@ -126,8 +124,6 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         # Enable/Disable command when data from input
         self.file_widget.setEnabled(not have_data)
         self.browse_documentation.setEnabled(not have_data)
-
-        self.update_input_info(data)
 
         if have_data:
             self.open_file(data=data)
@@ -148,6 +144,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
     def open_file(self, path=None, data=None):
         self.closeContext()
         self.Error.clear()
+        self.cancel()
         self.unused_attrs_model[:] = []
         self.used_attrs_model[:] = []
         self.start(self._load_corpus, path, data)
@@ -157,10 +154,10 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         if corpus is None:
             return
 
-        self.update_output_info()
         self._setup_title_dropdown()
         self.used_attrs = list(self.corpus.text_features)
-        if not self.corpus.text_features:
+        all_str_features = [f for f in self.corpus.domain.metas if f.is_string]
+        if not all_str_features:
             self.Error.corpus_without_text_features()
             self.Outputs.corpus.send(None)
             return
@@ -227,39 +224,6 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
         else:
             self.title_variable = None
 
-    def update_output_info(self):
-        def describe(corpus):
-            dom = corpus.domain
-            text_feats = sum(m.is_string for m in dom.metas)
-            other_feats = len(dom.attributes) + len(dom.metas) - text_feats
-            text = \
-                "{} document(s)\n{} text features(s)\n{} other feature(s)". \
-                format(len(corpus), text_feats, other_feats)
-            if dom.has_continuous_class:
-                text += "\nRegression; numerical class."
-            elif dom.has_discrete_class:
-                text += "\nClassification; discrete class with {} values.". \
-                    format(len(dom.class_var.values))
-            elif corpus.domain.class_vars:
-                text += "\nMulti-target; {} target variables.".format(
-                    len(corpus.domain.class_vars))
-            return text
-
-        if self.corpus is None:
-            self.info.set_output_summary(self.info.NoOutput)
-        else:
-            self.info.set_output_summary(
-                str(len(self.corpus)), describe(self.corpus))
-
-    def update_input_info(self, data):
-        if data:
-            self.info.set_input_summary(
-                str(len(data)),
-                f"{len(data)} data instance{'s' if len(data) > 1 else ''}"
-                f" on input")
-        else:
-            self.info.set_input_summary(self.info.NoInput)
-
     def update_feature_selection(self):
         self.Error.no_text_features_used.clear()
         # TODO fix VariablesListItemView so it does not emit
@@ -307,9 +271,5 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
 
 
 if __name__ == '__main__':
-    from AnyQt.QtWidgets import QApplication
-    app = QApplication([])
-    widget = OWCorpus()
-    widget.show()
-    app.exec()
-    widget.saveSettings()
+    from orangewidget.utils.widgetpreview import WidgetPreview
+    WidgetPreview(OWCorpus).run()

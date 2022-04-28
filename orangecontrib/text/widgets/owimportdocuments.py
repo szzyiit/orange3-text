@@ -10,6 +10,7 @@ import enum
 import warnings
 import logging
 import traceback
+from urllib.parse import urlparse
 
 from types import SimpleNamespace as namespace
 from concurrent.futures._base import TimeoutError
@@ -22,11 +23,15 @@ from AnyQt.QtGui import QStandardItem, QDropEvent
 from AnyQt.QtWidgets import (
     QAction, QPushButton, QComboBox, QApplication, QStyle, QFileDialog,
     QFileIconProvider, QStackedWidget, QProgressBar, QWidget, QHBoxLayout,
-    QVBoxLayout, QLabel
+    QVBoxLayout, QLabel, QGridLayout, QSizePolicy, QCompleter
 )
+from numpy import array
+
+from orangewidget.utils.itemmodels import PyListModel
 
 from Orange.data import Table, Domain, StringVariable
 from Orange.widgets import widget, gui, settings
+from Orange.widgets.data.owfile import LineEditSelectOnFocus
 from Orange.widgets.utils.filedialogs import RecentPath
 from Orange.widgets.utils.concurrent import (
     ThreadExecutor, FutureWatcher, methodinvoke
@@ -34,13 +39,13 @@ from Orange.widgets.utils.concurrent import (
 from Orange.widgets.widget import Output
 
 from orangecontrib.text.corpus import Corpus
-from orangecontrib.text.import_documents import ImportDocuments
+from orangecontrib.text.import_documents import ImportDocuments, \
+    NoDocumentsException
 
 try:
     from orangecanvas.preview.previewbrowser import TextLabel
 except ImportError:
     from Orange.canvas.preview.previewbrowser import TextLabel
-
 
 # domain for skipped images output
 SKIPPED_DOMAIN = Domain([], metas=[
@@ -85,17 +90,22 @@ class OWImportDocuments(widget.OWWidget):
     description = "从文件夹载入文档."
     icon = "icons/ImportDocuments.svg"
     priority = 110
-    keywords = ['zairu', 'jiazai', 'wenjianjiazairu']
-    category = 'text'
+    category = '文本挖掘(Text Mining)'
 
     class Outputs:
         data = Output("语料库(Corpus)", Corpus, replaces=['Corpus'])
         skipped_documents = Output(
             "忽略的文档(Skipped documents)", Table, replaces=['Skipped documents'])
 
+    LOCAL_FILE, URL = range(2)
+    source = settings.Setting(LOCAL_FILE)
     #: list of recent paths
     recent_paths: List[RecentPath] = settings.Setting([])
     currentPath: Optional[str] = settings.Setting(None)
+    recent_urls: List[str] = settings.Setting([])
+    lemma_cb = settings.Setting(True)
+    pos_cb = settings.Setting(False)
+    ner_cb = settings.Setting(False)
 
     want_main_area = False
     resizing_enabled = False
@@ -110,16 +120,31 @@ class OWImportDocuments(widget.OWWidget):
         super().__init__()
         #: widget's runtime state
         self.__state = State.NoState
+        self.base_corpus = None
         self.corpus = None
         self.n_text_categories = 0
         self.n_text_data = 0
         self.skipped_documents = []
+        self.is_conllu = False
+        self.tokens = None
+        self.pos = None
+        self.ner = None
 
         self.__invalidated = False
         self.__pendingTask = None
 
-        vbox = gui.vBox(self.controlArea)
-        hbox = gui.hBox(vbox)
+        layout = QGridLayout()
+        layout.setSpacing(4)
+        gui.widgetBox(self.controlArea, orientation=layout, box='源')
+        source_box = gui.radioButtons(None, self, "source", box=True,
+                                      callback=self.start, addToLayout=False)
+        rb_button = gui.appendRadioButton(source_box, "文件夹:",
+                                          addToLayout=False)
+        layout.addWidget(rb_button, 0, 0, Qt.AlignVCenter)
+
+        box = gui.hBox(None, addToLayout=False, margin=0)
+        box.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+
         self.recent_cb = QComboBox(
             sizeAdjustPolicy=QComboBox.AdjustToMinimumContentsLengthWithIcon,
             minimumContentsLength=16,
@@ -150,25 +175,60 @@ class OWImportDocuments(widget.OWWidget):
             browseaction.iconText(),
             icon=browseaction.icon(),
             toolTip=browseaction.toolTip(),
-            clicked=browseaction.trigger
+            clicked=browseaction.trigger,
+            default=False,
+            autoDefault=False,
         )
         reloadbutton = QPushButton(
             reloadaction.iconText(),
             icon=reloadaction.icon(),
             clicked=reloadaction.trigger,
-            default=True,
+            default=False,
+            autoDefault=False,
         )
+        box.layout().addWidget(self.recent_cb)
+        layout.addWidget(box, 0, 1)
+        layout.addWidget(browsebutton, 0, 2)
+        layout.addWidget(reloadbutton, 0, 3)
 
-        hbox.layout().addWidget(self.recent_cb)
-        hbox.layout().addWidget(browsebutton)
-        hbox.layout().addWidget(reloadbutton)
+        rb_button = gui.appendRadioButton(source_box, "URL:", addToLayout=False)
+        layout.addWidget(rb_button, 3, 0, Qt.AlignVCenter)
+
+        self.url_combo = url_combo = QComboBox()
+        url_model = PyListModel()
+        url_model.wrap(self.recent_urls)
+        url_combo.setLineEdit(LineEditSelectOnFocus())
+        url_combo.setModel(url_model)
+        url_combo.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        url_combo.setEditable(True)
+        url_combo.setInsertPolicy(url_combo.InsertAtTop)
+        url_edit = url_combo.lineEdit()
+        l, t, r, b = url_edit.getTextMargins()
+        url_edit.setTextMargins(l + 5, t, r, b)
+        layout.addWidget(url_combo, 3, 1, 1, 3)
+        url_combo.activated.connect(self._url_set)
+        # whit completer we set that combo box is case sensitive when
+        # matching the history
+        completer = QCompleter()
+        completer.setCaseSensitivity(Qt.CaseSensitive)
+        url_combo.setCompleter(completer)
 
         self.addActions([browseaction, reloadaction])
 
         reloadaction.changed.connect(
             lambda: reloadbutton.setEnabled(reloadaction.isEnabled())
         )
-        box = gui.vBox(vbox, "信息")
+
+        box = gui.hBox(self.controlArea, "Conllu import options")
+        gui.checkBox(box, self, "lemma_cb", "Lemma",
+                     callback=self.commit)
+        gui.checkBox(box, self, "pos_cb", "POS tags",
+                     callback=self.commit)
+        gui.checkBox(box, self, "ner_cb", "NER",
+                     callback=self.commit)
+        self.controlArea.layout().addWidget(box)
+
+        box = gui.vBox(self.controlArea, "信息")
         self.infostack = QStackedWidget()
 
         self.info_area = QLabel(
@@ -181,6 +241,8 @@ class OWImportDocuments(widget.OWWidget):
         self.cancel_button = QPushButton(
             "取消",
             icon=self.style().standardIcon(QStyle.SP_DialogCancelButton),
+            default=False,
+            autoDefault=False,
         )
         self.cancel_button.clicked.connect(self.cancel)
 
@@ -212,6 +274,17 @@ class OWImportDocuments(widget.OWWidget):
 
         QApplication.postEvent(self, QEvent(RuntimeEvent.Init))
 
+    def _url_set(self):
+        url = self.url_combo.currentText()
+        pos = self.recent_urls.index(url)
+        url = url.strip()
+        if not urlparse(url).scheme:
+            url = "http://" + url
+            self.url_combo.setItemText(pos, url)
+            self.recent_urls[pos] = url
+        self.source = self.URL
+        self.start()
+
     def __initRecentItemsModel(self):
         if self.currentPath is not None and \
                 not os.path.isdir(self.currentPath):
@@ -231,7 +304,8 @@ class OWImportDocuments(widget.OWWidget):
 
         if self.currentPath is not None and \
                 os.path.isdir(self.currentPath) and self.recent_paths and \
-                os.path.samefile(self.currentPath, self.recent_paths[0].abspath):
+                os.path.samefile(self.currentPath,
+                                 self.recent_paths[0].abspath):
             self.recent_cb.setCurrentIndex(0)
         else:
             self.currentPath = None
@@ -299,15 +373,17 @@ class OWImportDocuments(widget.OWWidget):
             ncategories = self.n_text_categories
             n_skipped = len(self.skipped_documents)
             if ncategories < 2:
-                text = "{} document{}".format(nvalid, "s" if nvalid != 1 else "")
+                text = "{} document{}".format(nvalid,
+                                              "s" if nvalid != 1 else "")
             else:
-                text = "{} documents / {} categories".format(nvalid, ncategories)
+                text = "{} documents / {} categories".format(nvalid,
+                                                             ncategories)
             if n_skipped > 0:
                 text = text + ", {} skipped".format(n_skipped)
         elif self.__state == State.Cancelled:
-            text = "已取消"
+            text = "Cancelled"
         elif self.__state == State.Error:
-            text = "错误"
+            text = "Error state"
         else:
             assert False
 
@@ -338,7 +414,8 @@ class OWImportDocuments(widget.OWWidget):
         """
         if self.currentPath is not None and path is not None and \
                 os.path.isdir(self.currentPath) and os.path.isdir(path) and \
-                os.path.samefile(self.currentPath, path):
+                os.path.samefile(self.currentPath, path) and \
+                self.source == self.LOCAL_FILE:
             return True
 
         success = True
@@ -372,7 +449,7 @@ class OWImportDocuments(widget.OWWidget):
 
         if self.__state == State.Processing:
             self.cancel()
-
+        self.source = self.LOCAL_FILE
         return success
 
     def addRecentPath(self, path):
@@ -449,7 +526,7 @@ class OWImportDocuments(widget.OWWidget):
         """
         if self.__state == State.Processing:
             self.cancel()
-
+        self.source = self.LOCAL_FILE
         self.corpus = None
         self.start()
 
@@ -462,7 +539,9 @@ class OWImportDocuments(widget.OWWidget):
         self.progress_widget.setValue(0)
 
         self.__invalidated = False
-        if self.currentPath is None:
+        startdir = self.currentPath if self.source == self.LOCAL_FILE \
+            else self.url_combo.currentText().strip()
+        if not startdir:
             return
 
         if self.__state == State.Processing:
@@ -472,14 +551,13 @@ class OWImportDocuments(widget.OWWidget):
                      .format(self.__pendingTask.startdir))
             self.cancel()
 
-        startdir = self.currentPath
-
         self.__setRuntimeState(State.Processing)
 
         report_progress = methodinvoke(
             self, "__onReportProgress", (object,))
 
-        task = ImportDocuments(startdir, report_progress=report_progress)
+        task = ImportDocuments(startdir, self.source == self.URL,
+                               report_progress=report_progress)
 
         # collect the task state in one convenient place
         self.__pendingTask = taskstate = namespace(
@@ -529,13 +607,16 @@ class OWImportDocuments(widget.OWWidget):
         task = self.__pendingTask
         self.__pendingTask = None
 
+        corpus, errors, lemmas, pos, ner, is_conllu = None, [], None, None, \
+                                                      None, False
         try:
-            corpus, errors = task.future.result()
+            corpus, errors, lemmas, pos, ner, is_conllu = task.future.result()
+        except NoDocumentsException:
+            state = State.Error
+            self.error("Folder contains no readable files.")
         except Exception:
             sys.excepthook(*sys.exc_info())
             state = State.Error
-            corpus = None
-            errors = []
             self.error(traceback.format_exc())
         else:
             state = State.Done
@@ -543,11 +624,16 @@ class OWImportDocuments(widget.OWWidget):
 
         if corpus:
             self.n_text_data = len(corpus)
-            self.n_text_categories = len(corpus.domain.class_var.values)\
+            self.n_text_categories = len(corpus.domain.class_var.values) \
                 if corpus.domain.class_var else 0
 
-        self.corpus = corpus
-        self.corpus.name = "Documents"
+        self.base_corpus = self.corpus = corpus
+        self.is_conllu = is_conllu
+        self.tokens = lemmas
+        self.pos = pos
+        self.ner = ner
+        if self.corpus:
+            self.corpus.name = "Documents"
         self.skipped_documents = errors
 
         if len(errors):
@@ -577,10 +663,26 @@ class OWImportDocuments(widget.OWWidget):
             self.pathlabel.setText(prettifypath(arg.lastpath))
             self.progress_widget.setValue(int(100 * arg.progress))
 
+    def add_features(self):
+        lemma, pos, ner = self.lemma_cb, self.pos_cb, self.ner_cb
+        if self.corpus is None:
+            return
+        self.corpus = self.base_corpus.copy()
+        if lemma:
+            self.corpus.store_tokens(self.tokens)
+        if pos:
+            tags = array(self.pos, dtype=object)
+            self.corpus.pos_tags = tags
+        if ner:
+            var = StringVariable("named entities")
+            self.corpus = self.corpus.add_column(var, self.ner)
+
     def commit(self):
         """
         Create and commit a Corpus from the collected text meta data.
         """
+        if self.is_conllu:
+            self.add_features()
         self.Outputs.data.send(self.corpus)
         if self.skipped_documents:
             skipped_table = (

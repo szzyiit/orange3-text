@@ -1,8 +1,6 @@
 import unittest
-from unittest.mock import Mock
 
 import numpy as np
-import pkg_resources
 from AnyQt.QtWidgets import QPushButton
 
 from Orange.data import Domain, StringVariable
@@ -27,12 +25,12 @@ class TestStatisticsWidget(WidgetTest):
         """
         metas = np.array(
             [
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-                "Duis viverra elit eu mi blandit, {et} sollicitudin nisi ",
-                " a porta\tleo. Duis vitae ultrices massa. Mauris ut pulvinar a",
-                "tortor. Class (aptent) taciti\nsociosqu ad lit1ora torquent per",
+                ["Lorem ipsum dolor sit amet, consectetur adipiscing elit."],
+                ["Duis viverra elit eu mi blandit, {et} sollicitudin nisi "],
+                [" a porta\tleo. Duis vitae ultrices massa. Mauris ut pulvinar a"],
+                ["tortor. Class (aptent) taciti\nsociosqu ad lit1ora torquent per"],
             ]
-        ).reshape(-1, 1)
+        )
         text_var = StringVariable("text")
         domain = Domain([], metas=[text_var])
         self.corpus = Corpus(
@@ -95,7 +93,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_words_count(self):
         """ Test words count statistic """
-        data = self._compute_features("词数量")
+        data = self._compute_features("Word count")
         np.testing.assert_array_equal(data.X.flatten(), [8, 9, 11, 9])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -103,7 +101,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_characters_count(self):
         """ Test characters count statistic """
-        data = self._compute_features("字母数量")
+        data = self._compute_features("Character count")
         np.testing.assert_array_equal(data.X.flatten(), [47, 44, 48, 51])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -111,7 +109,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_n_gram_count(self):
         """ Test n-grams count statistic """
-        data = self._compute_features("N-gram 数量")
+        data = self._compute_features("N-gram count")
         np.testing.assert_array_equal(data.X.flatten(), [10, 12, 13, 12])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -119,7 +117,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_average_word_len(self):
         """ Test word density statistic """
-        data = self._compute_features("平均词长")
+        data = self._compute_features("Average word length")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [5.875, 4.888889, 4.363636, 5.666667]
         )
@@ -129,7 +127,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_punctuations_cont(self):
         """ Test punctuations count statistic """
-        data = self._compute_features("标点数量")
+        data = self._compute_features("Punctuation count")
         np.testing.assert_array_equal(data.X.flatten(), [2, 3, 2, 3])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -137,7 +135,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_capitals_count(self):
         """ Test capitals count statistic """
-        data = self._compute_features("大写字母数量")
+        data = self._compute_features("Capital letter count")
         np.testing.assert_array_equal(data.X.flatten(), [1, 1, 2, 1])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -145,7 +143,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_vowels_count(self):
         """ Test vowels count statistic """
-        data = self._compute_features("元音数量", "a,e,i,o,u")
+        data = self._compute_features("Vowel count", "a,e,i,o,u")
         np.testing.assert_array_equal(data.X.flatten(), [19, 20, 23, 20])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -154,7 +152,7 @@ class TestStatisticsWidget(WidgetTest):
     def test_consonants_count(self):
         """ Test consonants count statistic """
         data = self._compute_features(
-            "辅音数量", "b,c,d,f,g,h,j,k,l,m,n,p,q,r,s,t,v,w,x,y,z"
+            "Consonant count", "b,c,d,f,g,h,j,k,l,m,n,p,q,r,s,t,v,w,x,y,z"
         )
         np.testing.assert_array_equal(data.X.flatten(), [28, 24, 25, 30])
 
@@ -163,13 +161,14 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_per_cent_unique_words(self):
         """ Test per-cent unique words statistic """
-        data = self._compute_features("单个词占比")
+        data = self._compute_features("Per cent unique words")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [1, 1, 0.909091, 1]
         )
 
-        self.corpus[1][-1] = ""
-        data = self._compute_features("单个词占比")
+        with self.corpus.unlocked():
+            self.corpus[1][-1] = ""
+        data = self._compute_features("Per cent unique words")
         np.testing.assert_array_almost_equal(
             data.X.flatten(), [1, np.nan, 0.909091, 1]
         )
@@ -179,10 +178,10 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_starts_with(self):
         """ Test starts with count statistic """
-        data = self._compute_features("以...开头", "a")
+        data = self._compute_features("Starts with", "a")
         np.testing.assert_array_almost_equal(data.X.flatten(), [2, 0, 2, 2])
 
-        data = self._compute_features("以...开头", "ap")
+        data = self._compute_features("Starts with", "ap")
         np.testing.assert_array_almost_equal(data.X.flatten(), [0, 0, 0, 1])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -190,10 +189,10 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_ends_with(self):
         """ Test ends with count statistic """
-        data = self._compute_features("以...结尾", "t")
+        data = self._compute_features("Ends with", "t")
         np.testing.assert_array_almost_equal(data.X.flatten(), [3, 3, 1, 2])
 
-        data = self._compute_features("以...结尾", "et")
+        data = self._compute_features("Ends with", "et")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 1, 0, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -201,13 +200,13 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_contains(self):
         """ Test contains count statistic """
-        data = self._compute_features("包含", "t")
+        data = self._compute_features("Contains", "t")
         np.testing.assert_array_almost_equal(data.X.flatten(), [5, 4, 4, 9])
 
-        data = self._compute_features("包含", "et")
+        data = self._compute_features("Contains", "et")
         np.testing.assert_array_almost_equal(data.X.flatten(), [2, 1, 0, 0])
 
-        data = self._compute_features("包含", "is")
+        data = self._compute_features("Contains", "is")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 2, 2, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -216,11 +215,11 @@ class TestStatisticsWidget(WidgetTest):
     def test_regex(self):
         """ Test regex statistic """
         # words that contains digit
-        data = self._compute_features("正则表达式", "\w*\d\w*")
+        data = self._compute_features("Regex", "\w*\d\w*")
         np.testing.assert_array_almost_equal(data.X.flatten(), [0, 0, 0, 1])
 
         # words that contains digit
-        data = self._compute_features("正则表达式", "\w*is\w*")
+        data = self._compute_features("Regex", "\w*is\w*")
         np.testing.assert_array_almost_equal(data.X.flatten(), [1, 2, 2, 0])
 
         self.send_signal(self.widget.Inputs.corpus, None)
@@ -233,7 +232,7 @@ class TestStatisticsWidget(WidgetTest):
         - test with corpus that has pos tags
         """
         self.send_signal(self.widget.Inputs.corpus, self.corpus)
-        self._set_feature("POS 标记", "NN")
+        self._set_feature("POS tag", "NN")
         self.widget.apply()
         self.wait_until_finished()
         res = self.get_output(self.widget.Outputs.corpus)
@@ -244,13 +243,57 @@ class TestStatisticsWidget(WidgetTest):
         result = tagger(self.corpus)
 
         self.send_signal(self.widget.Inputs.corpus, result)
-        self._set_feature("POS 标记", "NN")
+        self._set_feature("POS tag", "NN")
         self.widget.apply()
         self.wait_until_finished()
         res = self.get_output(self.widget.Outputs.corpus)
         self.assertTupleEqual((len(self.corpus), 1), res.X.shape)
         np.testing.assert_array_almost_equal(res.X.flatten(), [6, 5, 4, 5])
         self.assertFalse(self.widget.Warning.not_computed.is_shown())
+
+    def test_yule(self):
+        """
+        Test Yule's I - complexity index.
+        - test with corpus that has no pos tags - warning raised
+        - test with corpus that has pos tags
+        """
+        self.send_signal(self.widget.Inputs.corpus, self.corpus)
+        self._set_feature("Yule's I")
+        self.widget.apply()
+        self.wait_until_finished()
+        res = self.get_output(self.widget.Outputs.corpus)
+        self.assertEqual(0, res.X.shape[1])
+        self.assertTrue(self.widget.Warning.not_computed.is_shown())
+
+        with self.corpus.unlocked():
+            self.corpus[1][-1] = "simple"
+        tagger = AveragedPerceptronTagger()
+        result = tagger(self.corpus)
+
+        self.send_signal(self.widget.Inputs.corpus, result)
+        self._set_feature("Yule's I")
+        self.widget.apply()
+        self.wait_until_finished()
+        res = self.get_output(self.widget.Outputs.corpus)
+        self.assertTupleEqual((len(self.corpus), 1), res.X.shape)
+        # the second document will have lower complexity than the first one
+        self.assertLess(res[1][0], res[0][0])
+        self.assertFalse(self.widget.Warning.not_computed.is_shown())
+
+    def test_lix(self):
+        """
+        Test LIX readability score.
+        """
+        with self.corpus.unlocked():
+            self.corpus[1][-1] = "simple. simple."
+        self.send_signal(self.widget.Inputs.corpus, self.corpus)
+        self._set_feature("LIX index")
+        self.widget.apply()
+        self.wait_until_finished()
+        res = self.get_output(self.widget.Outputs.corpus)
+        self.assertTupleEqual((len(self.corpus), 1), res.X.shape)
+        # the second document will have lower complexity than the first one
+        self.assertLess(res[1][0], res[0][0])
 
     def test_statistics_combination(self):
         """
@@ -259,9 +302,9 @@ class TestStatisticsWidget(WidgetTest):
         """
         self.send_signal(self.widget.Inputs.corpus, self.corpus)
 
-        wc_index = STATISTICS_NAMES.index("词数量")
-        starts_with_index = STATISTICS_NAMES.index("以...开头")
-        capital_counts_index = STATISTICS_NAMES.index("大写字母数量")
+        wc_index = STATISTICS_NAMES.index("Word count")
+        starts_with_index = STATISTICS_NAMES.index("Starts with")
+        capital_counts_index = STATISTICS_NAMES.index("Capital letter count")
         self.widget.active_rules = [
             (wc_index, ""),
             (starts_with_index, "a"),
@@ -333,7 +376,7 @@ class TestStatisticsWidget(WidgetTest):
 
     def test_compute_values(self):
         """ Test compute values on new data """
-        data = self._compute_features("词数量")
+        data = self._compute_features("Word count")
 
         computed = Corpus.from_table(data.domain, self.book_data)
         self.assertEqual(data.domain, computed.domain)
@@ -376,55 +419,6 @@ class TestStatisticsWidget(WidgetTest):
         ][0]
         remove_button.click()
         self.assertListEqual([], self.widget.active_rules)
-
-    def test_input_summary(self):
-        """ Test correctness of the input summary """
-        self.widget.info.set_input_summary = in_sum = Mock()
-
-        self.send_signal(self.widget.Inputs.corpus, self.corpus)
-        in_sum.assert_called_with(
-            len(self.corpus),
-            "4 instances, 1 variable\nFeatures: — (No missing values)"
-            "\nTarget: —\nMetas: string",
-        )
-        in_sum.reset_mock()
-
-        self.send_signal(self.widget.Inputs.corpus, self.book_data)
-        in_sum.assert_called_with(
-            len(self.book_data),
-            "140 instances, 2 variables\nFeatures: — (No missing values)"
-            "\nTarget: categorical\nMetas: string",
-        )
-        in_sum.reset_mock()
-
-        self.send_signal(self.widget.Inputs.corpus, None)
-        in_sum.assert_called_with(self.widget.info.NoInput)
-
-    def test_output_summary(self):
-        """ Test correctness of the output summary"""
-        self.widget.info.set_output_summary = out_sum = Mock()
-
-        self.send_signal(self.widget.Inputs.corpus, self.corpus)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            len(self.corpus),
-            "4 instances, 3 variables\nFeatures: 2 numeric (No missing values)"
-            "\nTarget: —\nMetas: string",
-        )
-        out_sum.reset_mock()
-
-        self.send_signal(self.widget.Inputs.corpus, self.book_data)
-        self.wait_until_finished()
-        out_sum.assert_called_with(
-            len(self.book_data),
-            "140 instances, 4 variables\nFeatures: 2 numeric (No missing values)"
-            "\nTarget: categorical\nMetas: string",
-        )
-        out_sum.reset_mock()
-
-        self.send_signal(self.widget.Inputs.corpus, None)
-        self.wait_until_finished()
-        out_sum.assert_called_with(self.widget.info.NoOutput)
 
 
 if __name__ == "__main__":

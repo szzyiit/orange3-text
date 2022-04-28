@@ -1,13 +1,13 @@
 # Build files
 build
 dist
+Orange3_Text_zh.egg-info/*
 Orange3_Text_zh.egg-info
 doc/_build
 *.so
 *.pyd
 *.pyc
 MANIFEST
-*.eggs
 
 # Version
 orangecontrib/text/version.py
@@ -24,6 +24,8 @@ __pycache__
 .settings/*
 .DS_Store
 .vscode/
+.github/*
+.github
 
 # Coverage
 .coverage

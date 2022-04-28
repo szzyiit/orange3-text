@@ -68,9 +68,9 @@ class BaseTests:
         doc_topics = np.array([[0.6, 0.1, 0.3],
                                [0.2, 0.6, 0.2],
                                [0.2, 0.3, 0.5]])
-        np.testing.assert_allclose(self.model._marginal_probability(
-                                   tokens, doc_topics),
-                                   [[0.37777778], [0.31111111], [0.31111111]])
+        marg_prob, num_tokens = self.model._marginal_probability(tokens, doc_topics)
+        np.testing.assert_allclose(marg_prob, [[0.37777778], [0.31111111], [0.31111111]])
+        self.assertEqual(9, num_tokens)
 
     def test_existing_attributes(self):
         """ doc_topic should not include existing X of corpus, just topics """
@@ -95,6 +95,11 @@ class LDATests(unittest.TestCase, BaseTests):
         self.assertEqual(len(corpus.domain.attributes), 5)
         self.assertEqual(corpus.X.shape, (len(self.corpus), 5))
         self.assertEqual(corpus.X.dtype, np.float64)
+
+    def test_random_seed(self):
+        corpus1 = self.model.fit_transform(self.corpus)
+        corpus2 = self.model.fit_transform(self.corpus)
+        np.testing.assert_array_equal(corpus1.X, corpus2.X)
 
 
 class HdpTest(unittest.TestCase, BaseTests):

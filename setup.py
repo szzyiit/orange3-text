@@ -16,9 +16,9 @@ except ImportError:
 NAME = 'Orange3-Text-zh'
 
 MAJOR = 1
-MINOR = 3
-MICRO = 3
-IS_RELEASED = True
+MINOR = 8
+MICRO = 0
+IS_RELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 FULL_VERSION = VERSION
 
@@ -147,7 +147,25 @@ def temp_test_suite():
     return TestSuite([])
 
 
-if __name__ == '__main__':
+DATA_FILES = []
+
+
+def include_documentation(local_dir, install_dir):
+    global DATA_FILES
+
+    doc_files = []
+    for dirpath, _, files in os.walk(local_dir):
+        doc_files.append(
+            (
+                dirpath.replace(local_dir, install_dir),
+                [os.path.join(dirpath, f) for f in files],
+            )
+        )
+    DATA_FILES.extend(doc_files)
+
+
+if __name__ == "__main__":
+    include_documentation("doc/_build/html", "help/orange3-text")
     write_version_py()
     setup(
         name=NAME,
@@ -161,9 +179,16 @@ if __name__ == '__main__':
         packages=find_packages(),
         include_package_data=True,
         install_requires=INSTALL_REQUIRES,
+        data_files=DATA_FILES,
         entry_points=ENTRY_POINTS,
         keywords=KEYWORDS,
         namespace_packages=['orangecontrib'],
         zip_safe=False,
-        test_suite="setup.temp_test_suite"
+        test_suite="setup.temp_test_suite",
+        extras_require={
+            'test': ['coverage'],
+            # docutils changed html template in version 0.17; fixing to 0.16 until parser is not fixed 
+            # todo: remove docutils requirement when parser fixed in widget-base and released
+            'doc': ['sphinx', 'recommonmark', 'sphinx_rtd_theme', 'docutils<0.17'],  
+        },
     )
