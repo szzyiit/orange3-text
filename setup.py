@@ -17,8 +17,8 @@ NAME = 'Orange3-Text-zh'
 
 MAJOR = 1
 MINOR = 8
-MICRO = 0
-IS_RELEASED = False
+MICRO = 1
+IS_RELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 FULL_VERSION = VERSION
 

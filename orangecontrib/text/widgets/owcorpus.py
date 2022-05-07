@@ -19,6 +19,7 @@ class OWCorpus(OWWidget, ConcurrentWidgetMixin):
     description = "载入文档语料库."
     icon = "icons/TextFile.svg"
     priority = 100
+    keywords = ["yuliaoku"]
     replaces = ["orangecontrib.text.widgets.owloadcorpus.OWLoadCorpus"]
     category = '文本挖掘(Text Mining)'
 

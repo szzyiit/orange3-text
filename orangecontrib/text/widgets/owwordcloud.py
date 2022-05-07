@@ -105,6 +105,7 @@ class OWWordCloud(OWWidget, ConcurrentWidgetMixin):
     name = "词云(Word Cloud)"
     priority = 510
     icon = "icons/WordCloud.svg"
+    keywords = ['ciyun']
     category = '文本挖掘(Text Mining)'
 
     class Inputs:

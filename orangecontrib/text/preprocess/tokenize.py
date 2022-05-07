@@ -94,7 +94,7 @@ class TweetTokenizer(BaseTokenizer):
 
 class JiebaTokenizer(BaseTokenizer):
     """ 结巴中文分词 """
-    jieba.enable_paddle()  # 启动paddle模式
+    # jieba.enable_paddle()  # 启动paddle模式
     name = '结巴中文分词'
     tokenizer = jieba
 
@@ -106,7 +106,7 @@ class JiebaTokenizer(BaseTokenizer):
         return self._store_tokens_from_documents(corpus, callback)
 
     def _preprocess(self, string):
-        return list(filter(lambda x: x != '', self.tokenizer.cut(string, use_paddle=True)))
+        return list(filter(lambda x: x != '', self.tokenizer.cut(string)))
 
     def tokenize_sents(self, corpus):
         return [self._preprocess(string) for string in corpus.documents]

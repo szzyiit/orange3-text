@@ -205,7 +205,7 @@ class OWSemanticViewer(OWWidget, ConcurrentWidgetMixin):
     description = "显示语料库语义"
     icon = "icons/SemanticViewer.svg"
     priority = 1120
-    keywords = ["search"]
+    keywords = ["search", 'yuyichakan']
     category = '文本挖掘(Text Mining)'
 
     class Inputs:

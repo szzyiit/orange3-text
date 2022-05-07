@@ -90,6 +90,7 @@ class OWImportDocuments(widget.OWWidget):
     description = "从文件夹载入文档."
     icon = "icons/ImportDocuments.svg"
     priority = 110
+    keywords = ['zairu', 'wenjianjiazairu']
     category = '文本挖掘(Text Mining)'
 
     class Outputs:

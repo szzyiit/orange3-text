@@ -323,6 +323,7 @@ class OWScoreDocuments(OWWidget, ConcurrentWidgetMixin):
     name = "文档评分(Score Documents)"
     description = ""
     icon = "icons/ScoreDocuments.svg"
+    keywords = ['wendangpingfen']
     priority = 500
     category = '文本挖掘(Text Mining)'
 

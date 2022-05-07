@@ -118,7 +118,7 @@ class OWTopicModeling(OWWidget, ConcurrentWidgetMixin):
     description = "展现语料库隐藏的语义结构."
     icon = "icons/TopicModeling.svg"
     priority = 400
-    keywords = ["LDA"]
+    keywords = ["LDA", 'zhutimoxing']
     category = '文本挖掘(Text Mining)'
 
     settingsHandler = DomainContextHandler()

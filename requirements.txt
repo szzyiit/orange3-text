@@ -28,4 +28,4 @@ six
 # wikipedia
 yake
 jieba
-paddlepaddle-tiny==1.6.1
+# paddlepaddle-tiny==1.6.1 # jieba is dead, paddletiny is dead too, ues other in the futher

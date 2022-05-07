@@ -18,6 +18,7 @@ class OWDuplicates(widget.OWWidget):
     name = '查重(Duplicate Detection)'
     description = '侦查并删除重复内容'
     icon = 'icons/Duplicates.svg'
+    keywords = ['chachong']
     priority = 700
     category = '文本挖掘(Text Mining)'
 

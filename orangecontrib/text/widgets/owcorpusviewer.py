@@ -25,6 +25,7 @@ class OWCorpusViewer(OWWidget):
     name = "语料查看器(Corpus Viewer)"
     description = "显示语料库内容."
     icon = "icons/CorpusViewer.svg"
+    keywords = ['yuliaochakan']
     priority = 500
     category = '文本挖掘(Text Mining)'
 

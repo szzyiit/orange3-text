@@ -147,6 +147,7 @@ class OWWordList(OWWidget):
     name = "词列表(Word List)"
     description = "Create a list of words."
     icon = "icons/WordList.svg"
+    keywords = ['ciliebiao']
     priority = 1000
     category = '文本挖掘(Text Mining)'
 

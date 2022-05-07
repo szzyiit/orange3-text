@@ -176,7 +176,7 @@ class OWKeywords(OWWidget, ConcurrentWidgetMixin):
     description = "从输入语料库推断关键词."
     icon = "icons/Keywords.svg"
     priority = 1100
-    keywords = ["characteristic", "term"]
+    keywords = ["characteristic", "term", 'guanjianci']
     category = '文本挖掘(Text Mining)'
 
     buttons_area_orientation = Qt.Vertical

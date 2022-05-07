@@ -61,7 +61,7 @@ def run_pretrained_embedder(corpus: Corpus,
 class OWDocumentEmbedding(OWWidget, ConcurrentWidgetMixin):
     name = "文档嵌入(Document Embedding)"
     description = "使用预训练模型的文档嵌入."
-    keywords = ['embedding', 'document embedding', 'text']
+    keywords = ['embedding', 'document embedding', 'wendangqianru', 'qianru']
     icon = 'icons/TextEmbedding.svg'
     priority = 300
     category = '文本挖掘(Text Mining)'
