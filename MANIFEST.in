@@ -1,4 +1,5 @@
 recursive-include orangecontrib/text/datasets *.tab *.txt
+recursive-include orangecontrib/text/chinese_stop_words *
 recursive-include orangecontrib/text/models *.ftz
 recursive-include orangecontrib/text/sentiment *.txt
 recursive-include orangecontrib/text/tests *.txt *.json
